@@ -78,7 +78,8 @@ int main()
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    Learn::ParallelLearningAgent la(LE, set, params); //Learn::LearningAgent la(gameLE, set, params);
+    //Learn::ParallelLearningAgent la(LE, set, params);
+    Learn::LearningAgent la(LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la.init();
 
     // Init the best Policy
