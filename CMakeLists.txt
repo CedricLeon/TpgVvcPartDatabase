@@ -5,8 +5,6 @@ project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 17)
 
-
-set(DEBUG 0)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 # *******************************************
@@ -48,6 +46,7 @@ add_executable(${PROJECT_NAME}
                ../src/main.cpp
                ../src/PartCU.cpp
                ../include/PartCU.h
+               ../params.json
 )
 target_link_libraries(${PROJECT_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
