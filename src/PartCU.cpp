@@ -35,17 +35,11 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode)
     // Reset the RNG
     this->rng.setSeed(hash_seed);
 
-    // Reset the count of CU
-    nbSplitsJob = 0;
-
     // Reset the score
     score = 0;
 
     // Preload the first CU
-    if (!LoadNextCU())
-    {
-       std::cout << "LoadNextCU() : returned false ..." << std::endl;
-    }
+    LoadNextCU();
 }
 
 Learn::LearningEnvironment* PartCU::clone() const
@@ -55,7 +49,7 @@ Learn::LearningEnvironment* PartCU::clone() const
 
 bool PartCU::isCopyable() const
 {
-    return true;
+    return true; // false : pour eviter qu'il se lance en parallel (Cf LearningAgent)
 }
 
 double PartCU::getScore() const
