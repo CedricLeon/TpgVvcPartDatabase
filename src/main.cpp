@@ -51,35 +51,51 @@ int main()
 
     // Create the instruction set for programs
     Instructions::Set set;
-    auto minus = [](double a, double b)->double {return a - b; };
-    auto add = [](double a, double b)->double {return a + b; };
-    auto mult = [](double a, double b)->double {return a * b; };
-    auto div = [](double a, double b)->double {return a / b; };
-    auto max = [](double a, double b)->double {return std::max(a, b); };
-    auto ln = [](double a)->double {return std::log(a); };
-    auto exp = [](double a)->double {return std::exp(a); };
+    auto minus = [](uint8_t a, uint8_t b)->uint8_t {return a - b; };
+    auto add   = [](uint8_t a, uint8_t b)->uint8_t {return a + b; };
+    auto mult  = [](uint8_t a, uint8_t b)->uint8_t {return a * b; };
+    //auto div   = [](uint8_t a, uint8_t b)->uint8_t {return a / b; };
+    auto max   = [](uint8_t a, uint8_t b)->uint8_t {return std::max(a, b); };
+    auto ln    = [](uint8_t a)->uint8_t {return std::log(a); };
+    auto exp   = [](uint8_t a)->uint8_t {return std::exp(a); };
+
+    auto minus_double = [](double a, double b)->double {return a - b; };
+    auto add_double = [](double a, double b)->double {return a + b; };
+    auto mult_double = [](double a, double b)->double {return a * b; };
+    auto div_double = [](double a, double b)->double {return a / b; };
+    auto max_double = [](double a, double b)->double {return std::max(a, b); };
+    auto ln_double = [](double a)->double {return std::log(a); };
+    auto exp_double = [](double a)->double {return std::exp(a); };
 
     // Add those instructions to instruction set
-    set.add(*(new Instructions::LambdaInstruction<double, double>(minus)));
-    set.add(*(new Instructions::LambdaInstruction<double, double>(add)));
-    set.add(*(new Instructions::LambdaInstruction<double, double>(mult)));
-    set.add(*(new Instructions::LambdaInstruction<double, double>(div)));
-    set.add(*(new Instructions::LambdaInstruction<double, double>(max)));
-    set.add(*(new Instructions::LambdaInstruction<double>(exp)));
-    set.add(*(new Instructions::LambdaInstruction<double>(ln)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(add)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(mult)));
+    //set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(div)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(max)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t>(exp)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t>(ln)));
+
+    set.add(*(new Instructions::LambdaInstruction<double, double>(minus_double)));
+    set.add(*(new Instructions::LambdaInstruction<double, double>(add_double)));
+    set.add(*(new Instructions::LambdaInstruction<double, double>(mult_double)));
+    set.add(*(new Instructions::LambdaInstruction<double, double>(div_double)));
+    set.add(*(new Instructions::LambdaInstruction<double, double>(max_double)));
+    set.add(*(new Instructions::LambdaInstruction<double>(exp_double)));
+    set.add(*(new Instructions::LambdaInstruction<double>(ln_double)));
 
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Instantiate the LearningEnvironment
-    PartCU LE({0, 1, 2, 3, 4, 5});
+    PartCU LE({0, 1, 2, 3, 4, 5}, params.maxNbActionsPerEval);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    //Learn::ParallelLearningAgent la(LE, set, params);
-    Learn::LearningAgent la(LE, set, params);   // USING Non-Parallel Agent to DEBUG
+    Learn::ParallelLearningAgent la(LE, set, params);
+    //Learn::LearningAgent la(LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la.init();
 
     // Init the best Policy
