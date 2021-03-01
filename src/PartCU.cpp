@@ -66,110 +66,80 @@ double PartCU::getScore() const
 
 bool PartCU::isTerminal() const
 {
-    // Poser la question à Karol : return compteDeSplit == maxNbActionsPerEval ?
-
     // Return if the job is over
-    return nbSplitsJob == MAX_NB_ACTIONS_PER_EVAL;
+    return false;
 }
 
 // ********************************************************************* //
 // *************************** PartCU FUNCTIONS ************************ //
 // ********************************************************************* //
 
-
-void PartCU::InitRandomList()
+uint8_t PartCU::getNbGenerationsBeforeTargetChange()
 {
-    // Init liste aléatoire
-    // NB total elements in the database : 1 420 531
-    // If we keep 20% of the elements for the verification that let 1 136 424 elements for training
-
-    std::chrono::time_point<std::chrono::system_clock> start = std::chrono::system_clock::now();
-
-    // std::cout << "My vector max size : " << this->CU_list.max_size() << std::endl;
-
-    // ------------------------------ Filling Time ------------------------------
-    for(uint32_t i = 0; i < NB_TRAINING_ELEMENTS; i++)  // Extremly fast ...
-        this->CU_list.push_back(i);
-
-    // ------------------------------ Shuffle Time ------------------------------
-    // Is it really necessary to pick CU randomly and make sure that a CU isn't picked 2 times ?
-    // If the TPG picks a CU already tried in another job that change nothing ?
-
-    // Default : using std::random_shuffle
-    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::shuffle(this->CU_list.begin(), this->CU_list.end(), std::default_random_engine(seed));
-
-    // Else, switch 2 randomly (with rng => GEGELATI determinist library) picked elements X times :
-    /*uint32_t position = 0;
-    uint32_t next_position = 0;
-    for(uint32_t i = 0; i < NB_TRAINING_ELEMENTS*10; ++i)  // Make 10 browses of CU_list
-    {
-        position      = this->rng.getInt32(0, NB_TRAINING_ELEMENTS-1);
-        next_position = this->rng.getInt32(0, NB_TRAINING_ELEMENTS-1);
-        iter_swap(this->CU_list.begin() + position, this->CU_list.begin() + next_position);
-    }*/
-
-    // Print Time :
-    std::chrono::time_point<std::chrono::system_clock> end = std::chrono::system_clock::now();
-    std::cout << "Time : " << std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
+    return NB_GENERATION_BEFORE_TARGETS_CHANGE;
 }
 
-bool PartCU::LoadNextCU()
+Data::PrimitiveTypeArray<uint8_t>* PartCU::getRandomCU(int index)
 {
-    // Update the PATH to the next CU
+    // ------------------ Opening and Reading a random CU file ------------------
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS-1);
-
     char next_CU_number_string[100];
-    std::sprintf(next_CU_number_string, "%d", next_CU_number /*this->CU_list[next_CU_number]*/);
-
-    // Dunno why strcat threw exeptions, this is dirty but works
+    std::sprintf(next_CU_number_string, "%d", next_CU_number);
     char current_CU_path[100] = "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/";
     char bin_extension[10] = ".bin";
     std::strcat(current_CU_path, next_CU_number_string);
     std::strcat(current_CU_path, bin_extension);
 
-    // Open the file
+    // Openning the file
     std::FILE* input = std::fopen(current_CU_path, "r");
-    if (!input) // Check validity
+    if (!input)
     {
         std::perror("File opening failed");
-        //std::cout << "Cannot open file : " << current_CU_path << std::endl;
-        return EXIT_FAILURE;
+        return nullptr; // return EXIT_FAILURE;
     }
+
+    // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
     uint8_t contents[32*32+1];
     std::fread(&contents[0], 1, 32*32+1, input);
-
-    // Important ! ^^
+    // Important ...
     std::fclose(input);
 
-    // Get the solution
-    this->optimal_split = contents[1024];
-
-    // Load the image in the dataSource
+    // Creating a new PrimitiveTypeArray<uint8_t> and filling it
+    Data::PrimitiveTypeArray<uint8_t>* randomCU = new Data::PrimitiveTypeArray<uint8_t>(32*32);
     for (uint32_t pxlIndex = 0; pxlIndex < 32*32; pxlIndex++)
-    {
-        try
-        {
-            this->currentCU.setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
-        }
-        catch (std::invalid_argument& e) {
-            std::cout << e.what() << " LoadNextCU( pxlIndex : " << pxlIndex << ")" << std::endl;
-            return false;
-        }
-        catch (std::out_of_range& e) {
-            std::cout << e.what() << " LoadNextCU( pxlIndex : " << pxlIndex << ")" << std::endl;
-            return false;
-        }
-    }
-    return true;
+        randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
+
+    // Updating the corresponding optimal split
+    this->trainingTargetsOptimalSplits.emplace_back(contents[1024]);
+
+    return randomCU;
+}
+
+void PartCU::LoadNextCU()
+{
+    // Checking validity is no longer necessary
+    //try
+    //{
+        // Updating next CU's values
+        this->currentCU = *this->trainingTargetsCU[actualCU];
+    //}
+    //catch (std::domain_error e)
+    //{
+    //    std::cout << "LoadNextCU (actualCU : " << actualCU << "), PrimitiveTypeArray's operator= : " << e.what() << std::endl;
+    //}
+
+    // Updating next split solution
+    this->optimal_split = this->trainingTargetsOptimalSplits[actualCU];
+    this->actualCU++;
+    // Looping on the beginning of training targets
+    if (this->actualCU >= MAX_NB_ACTIONS_PER_EVAL/* * NB_GENERATION_BEFORE_TARGETS_CHANGE*/)
+        this->actualCU = 0;
 }
 
 /***********************************************************************
     Ce TPG prendra en entrée un CU de 32x32 et fournira en sortie une action, un choix de split.
     La reward sera calculée à partir du RDO-Cost mais inversé (Plus le RDO-Cost est petit mieux c'est, mais le TPG essaie de maximiser par défaut donc getScore() rendra un truc type 1/RDO-Cost : à détailler)
     Pour l'entrainement on le lance dans le dossier D:\dev\InnovR\dataset_tpg_32x32_27\dataset_tpg_32x32_27 et on le fait tourner sur les 1.4 M de fichiers .bin ?
-
-    Demander à Alexandre si il prend juste le 32x32 pixels ou 32x32 plus quelques pixels sur les bords (padding)
 
     Dans les fichiers .bin :
     - 32x32 valeurs sous format uint_8
@@ -218,5 +188,14 @@ bool PartCU::LoadNextCU()
 
      - Une fonction MiseAEchelle() :      ****** Pas utile pour ce soft, database contient que des CU 32x32 ********
         - Sur-échantillonne le CU si il est trop petit pour qu'il soit de taille 32x32
+
+        changer instructions en uint8_t
+        en ouvrir max nb val (1000), les garder en mémoire (vector) pour toutes les roots (dans nbActions, 
+        dans le main rajouter entre 2 générations pour chargeer 1000 nouvelles images
+        et a chaque reset le reloadCU va se balader dans la liste des 1000 CUs
+
+        pour verif : dans le params.json le DO_VALIDATion = true 
+        changer de dataset en fonction du training / learning mode (Cf lien)
+        Cf params pour le json
 
 ************************************************************************/

@@ -13,13 +13,12 @@ class PartCU : public Learn::LearningEnvironment
 private:
 
     // ----- Constant -----
-    //static const size_t REWARD_HISTORY_SIZE = 300;
+    // Number of different actions for the Agent
     static const uint8_t  NB_ACTIONS = 6;
+    // On 1.4M elements in the database, we use 80% : 
     static const uint32_t NB_TRAINING_ELEMENTS = 1136424;
-    static const uint32_t MAX_NB_ACTIONS_PER_EVAL = 1000; // Regarder comment le recup depuis le params.json
-
-    // Reward history for score computation
-    //double rewardHistory[REWARD_HISTORY_SIZE];
+    // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
+    static const uint8_t  NB_GENERATION_BEFORE_TARGETS_CHANGE = 5;
 
     // Randomness control
     Mutator::RNG rng;
@@ -49,22 +48,35 @@ private:
     */
     Data::PrimitiveTypeArray<uint8_t> currentCU;
 
-    // ----- Intern Variables -----
-    //uint32_t nbSplitsTotal;
-    uint32_t nbSplitsJob; // Used in isTerminal() but dirty, it has to be another way ...
-
+    // ---------- Intern Variables ----------
     // Optimal split for the current CU extract from the .bin file
     uint8_t optimal_split;
 
-    // Vector containing CU describing files numbers, from 0 to NB_TRAINING_ELEMENTS in a stochastic order
-    std::vector<uint32_t> CU_list;
-
 public:
-    // Constructor
-    PartCU(std::vector<uint64_t> actions) : LearningEnvironment(NB_ACTIONS), availableActions(actions), score(0), nbSplitsJob(0), currentCU(32*32) { /*this->InitRandomList();*/ }
+    // ---------- Intern Variables ----------
+    // Number of actions per Evaluation, initialized by params.json
+    uint64_t MAX_NB_ACTIONS_PER_EVAL;
+    /**
+    * \brief List of CU datas and their corresponding optimal split
+    * Each of those vectors contains ${MAX_NB_ACTIONS_PER_EVAL} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
+    */
+    std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU;
+    std::vector<uint8_t> trainingTargetsOptimalSplits;
+    // Index of the actual loaded CU 
+    uint64_t actualCU;
 
-    void InitRandomList();  // Unused for the moment
-    bool LoadNextCU();
+    // Constructor
+    PartCU(std::vector<uint64_t> actions, uint64_t nbActionsPerEval) : LearningEnvironment(NB_ACTIONS),
+                                            availableActions(actions),
+                                            MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
+                                            score(0),
+                                            currentCU(32*32),
+                                            optimal_split(6),   // Unexisting split
+                                            actualCU(0) {}
+
+    uint8_t getNbGenerationsBeforeTargetChange();
+    void LoadNextCU();
+    Data::PrimitiveTypeArray<uint8_t>* getRandomCU(int index);
 
     // -------- LearningEnvironment --------
     LearningEnvironment* clone() const;
