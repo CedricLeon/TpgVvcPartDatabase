@@ -3,7 +3,7 @@
     "archivingProbability" : 0.01,
     "nbIterationsPerPolicyEvaluation" : 1,
     "maxNbActionsPerEval" : 1000,
-    "ratioDeletedRoots" : 0.998,
+    "ratioDeletedRoots" : 0.5,
     "maxNbEvaluationPerPolicy": 10,
     "doValidation" : true,
 
@@ -11,7 +11,7 @@
     {
 	    "tpg" :
 	    {
-	    	"nbRoots" : 2000,
+	    	"nbRoots" : 200,
 	    	"maxInitOutgoingEdges" : 3,
 	    	"maxOutgoingEdges" : 5,
 	    	"pEdgeDeletion" : 0.7,
