@@ -68,6 +68,10 @@ bool PartCU::isTerminal() const
 // *************************** PartCU FUNCTIONS ************************ //
 // ********************************************************************* //
 
+std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::trainingTargetsCU;
+std::vector<uint8_t> PartCU::trainingTargetsOptimalSplits;
+uint64_t PartCU::actualCU = 0;
+
 uint8_t PartCU::getNbGenerationsBeforeTargetChange()
 {
     return NB_GENERATION_BEFORE_TARGETS_CHANGE;
@@ -104,7 +108,7 @@ Data::PrimitiveTypeArray<uint8_t>* PartCU::getRandomCU(int index)
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
     // Updating the corresponding optimal split
-    this->trainingTargetsOptimalSplits.emplace_back(contents[1024]);
+    PartCU::trainingTargetsOptimalSplits.emplace_back(contents[1024]);
 
     return randomCU;
 }
@@ -115,7 +119,7 @@ void PartCU::LoadNextCU()
     //try
     //{
         // Updating next CU's values
-        this->currentCU = *this->trainingTargetsCU[actualCU];
+        this->currentCU = *PartCU::trainingTargetsCU[PartCU::actualCU];
     //}
     //catch (std::domain_error e)
     //{
@@ -123,11 +127,11 @@ void PartCU::LoadNextCU()
     //}
 
     // Updating next split solution
-    this->optimal_split = this->trainingTargetsOptimalSplits[actualCU];
-    this->actualCU++;
+    this->optimal_split = PartCU::trainingTargetsOptimalSplits[PartCU::actualCU];
+    PartCU::actualCU++;
     // Looping on the beginning of training targets
-    if (this->actualCU >= MAX_NB_ACTIONS_PER_EVAL/* * NB_GENERATION_BEFORE_TARGETS_CHANGE*/)
-        this->actualCU = 0;
+    if (PartCU::actualCU >= MAX_NB_ACTIONS_PER_EVAL/* * NB_GENERATION_BEFORE_TARGETS_CHANGE*/)
+        PartCU::actualCU = 0;
 }
 
 /***********************************************************************

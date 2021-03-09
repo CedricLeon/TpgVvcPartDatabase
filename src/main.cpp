@@ -88,8 +88,12 @@ int main()
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
+    // Initialising number of preloaded CUs
+    uint64_t nbTargetsLoaded = params.maxNbActionsPerEval * 10;                 // 10 000
+    uint8_t nbGeneTargetChange = 5;                                             // 5
+
     // Instantiate the LearningEnvironment
-    PartCU LE({0, 1, 2, 3, 4, 5}, params.maxNbActionsPerEval);
+    PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
@@ -125,12 +129,7 @@ int main()
     stats.open("bestPolicyStats.md");
     Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
 
-
-    uint64_t nbActionsPerEval = params.maxNbActionsPerEval;                 // 1000
-    uint64_t nbGeneTargetChange = LE.getNbGenerationsBeforeTargetChange();  // 5 
-
-    // Used as it is (nbGeneTargetChange is commented in loops), we load 1000 CUs and we use them for every roots during 5 generations
-
+    // Used as it is (nbGeneTargetChange is commented in loops), we load 10 000 CUs and we use them for every roots during 5 generations
     // Main training Loop
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
@@ -140,18 +139,18 @@ int main()
             // ---  Deleting old targets ---
             if (i != 0) // Don't clear trainingTargets before initializing them
             {
-                for (int idx_targ = 0; idx_targ < nbActionsPerEval/* *nbGeneTargetChange */; idx_targ++)
-                    delete LE.trainingTargetsCU[idx_targ];   // targets are allocated in getRandomCU()
-                LE.trainingTargetsCU.clear();
-                LE.trainingTargetsOptimalSplits.clear();
-                LE.actualCU = 0;
+                for (int idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange */; idx_targ++)
+                    delete PartCU::trainingTargetsCU[idx_targ];   // targets are allocated in getRandomCU()
+                PartCU::trainingTargetsCU.clear();
+                PartCU::trainingTargetsOptimalSplits.clear();
+                PartCU::actualCU = 0;
             }
 
             // ---  Loading next targets ---
-            for (int idx_targ = 0; idx_targ < nbActionsPerEval/* *nbGeneTargetChange*/; idx_targ++)
+            for (int idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange*/; idx_targ++)
             {
                 Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ);
-                LE.trainingTargetsCU.emplace_back(target);
+                PartCU::trainingTargetsCU.emplace_back(target);
                 // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
             }
         }

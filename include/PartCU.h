@@ -17,8 +17,6 @@ private:
     static const uint8_t  NB_ACTIONS = 6;
     // On 1.4M elements in the database, we use 80% : 
     static const uint32_t NB_TRAINING_ELEMENTS = 1136424;
-    // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
-    static const uint8_t  NB_GENERATION_BEFORE_TARGETS_CHANGE = 5;
 
     // Randomness control
     Mutator::RNG rng;
@@ -54,25 +52,30 @@ private:
 
 public:
     // ---------- Intern Variables ----------
+
     // Number of actions per Evaluation, initialized by params.json
-    uint64_t MAX_NB_ACTIONS_PER_EVAL;
+    const uint64_t MAX_NB_ACTIONS_PER_EVAL;
+    // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
+    const uint8_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
+
     /**
     * \brief List of CU datas and their corresponding optimal split
     * Each of those vectors contains ${MAX_NB_ACTIONS_PER_EVAL} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
-    std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU;
-    std::vector<uint8_t> trainingTargetsOptimalSplits;
+    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU;
+    static std::vector<uint8_t> trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
-    uint64_t actualCU;
+    static uint64_t actualCU;
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, uint64_t nbActionsPerEval) : LearningEnvironment(NB_ACTIONS),
+    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneration) : LearningEnvironment(NB_ACTIONS),
                                             availableActions(actions),
                                             MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
+                                            NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneration),
                                             score(0),
                                             currentCU(32*32),
-                                            optimal_split(6),   // Unexisting split
-                                            actualCU(0) {}
+                                            optimal_split(6)   // Unexisting split
+                                            {}
 
     uint8_t getNbGenerationsBeforeTargetChange();
     void LoadNextCU();
