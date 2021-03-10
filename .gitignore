@@ -1,5 +1,6 @@
 # Allow in source build
 [Bb]in
+[Bb]uild
 # Ignore qt files when importing CMakeLists
 *.users
 # Ignore CLion project files

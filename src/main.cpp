@@ -90,7 +90,7 @@ int main()
 
     // Initialising number of preloaded CUs
     uint64_t nbTargetsLoaded = params.maxNbActionsPerEval * 10;                  // 10 000
-    uint8_t nbGeneTargetChange = 20;                                             // 5
+    uint8_t nbGeneTargetChange = 30;                                             // 5
 
     // Instantiate the LearningEnvironment
     PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange);

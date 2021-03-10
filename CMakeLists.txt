@@ -1,4 +1,4 @@
-#cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.10)
 
 set(PROJECT_NAME TPGVVCPartDatabase)
 project(${PROJECT_NAME})
@@ -35,6 +35,33 @@ if (WIN32)
         file(COPY ${GEGELATI_DLL} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Debug)
         file(COPY ${GEGELATI_DLL} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/Release)
     endif()
+endif()
+
+# For Linux 
+if(NOT ${CMAKE_GENERATOR} MATCHES "Visual Studio.*")
+
+	# Link with pthread
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+
+	# Set to 1 to activate debug compilation (0 for release)
+	#set(DEBUG 0)
+
+	if(${DEBUG})
+			MESSAGE("Generate Debug project")
+			set(CMAKE_BUILD_TYPE Debug)
+			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Debug)
+			set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -pg -Wall")
+	else()
+			MESSAGE("Generate Release project")
+			set(CMAKE_BUILD_TYPE Release)
+			set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/Release)
+			set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall")
+	endif()
+	#add libmath during non visual studio builds
+	set(CMAKE_EXTRA_LIB m)
+else()
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # *******************************************
