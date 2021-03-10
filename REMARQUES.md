@@ -31,7 +31,7 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
 ## Pistes d'améliorations futures
 
 ### Amélioration des perfs
-* Utilisation du nouveau Array2DWrapper à la place du PrimitiveTypeArray
+* Utilisation du nouveau Array2DWrapper à la place du PrimitiveTypeArray (pas forcément ultra conséquent)
 * Faire du trainingTargetCU un attribut statique. (cela évitera le temps nécessaire à sa copie lors du clonage du learningEnvironment.) **DONE**
 
 ### Amélioration du score
@@ -39,11 +39,11 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
   * plus de roots (~2000)
   * moins de survivants (~ratioDeletedRoots ~0.95)
 
-**2000 roots - 0.90 ratioDeletedRoots** (Kelly le met à 0.5 pour la diversité, mais il en faut pas trop)
+**2000 roots - 0.90 ratioDeletedRoots** (Kelly le met à 0.5 pour la diversité, mais il en faut pas trop : pour l'instant test avec 0.90)
 
-* Ajouter de nouvelles instructions (à discuter)**(peut etre plus tard)**
+* Ajouter de nouvelles instructions (à discuter) **(peut etre plus tard)**
 * Essayer d'hériter du ClassificationLearningEnvironment. **(peut etre plus tard)**
-* Essayer de faire des TPG spécifiques à chaque type de découpe (i.e. Action binaire) plutôt que d'en faire un pour toutes les actions.
+* Essayer de faire des TPG spécifiques à chaque type de découpe (i.e. Action binaire) plutôt que d'en faire un pour toutes les actions. **(On verra plus tard mais on pourra même faire un truc plus meta avec un 7ème TPG qui manage la sortie des 6 autres)**
 
 
 
@@ -57,7 +57,7 @@ Si pas fait, installer le .exe pour windows (pour la sécu)
 
 Se login sur *SSH HTML5 v2 Dynamique IETR*
 
-**pc-eii21.insa-rennes.fr**
+pc-eii21.insa-rennes.fr
 
 **identifiant et mdp INSA**
 

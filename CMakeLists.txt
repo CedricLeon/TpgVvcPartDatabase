@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17)
+#cmake_minimum_required(VERSION 3.17)
 
 set(PROJECT_NAME TPGVVCPartDatabase)
 project(${PROJECT_NAME})
