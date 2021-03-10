@@ -68,7 +68,7 @@ bool PartCU::isTerminal() const
 // *************************** PartCU FUNCTIONS ************************ //
 // ********************************************************************* //
 
-std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::trainingTargetsCU;
+std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::trainingTargetsCU; // Array2DWrapper
 std::vector<uint8_t> PartCU::trainingTargetsOptimalSplits;
 uint64_t PartCU::actualCU = 0;
 

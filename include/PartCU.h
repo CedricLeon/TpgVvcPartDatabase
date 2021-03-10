@@ -7,6 +7,7 @@
 #include<fstream>
 
 #include <gegelati.h>
+// #include <array2DWrapper.h>
 
 class PartCU : public Learn::LearningEnvironment
 {
@@ -62,7 +63,7 @@ public:
     * \brief List of CU datas and their corresponding optimal split
     * Each of those vectors contains ${MAX_NB_ACTIONS_PER_EVAL} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
-    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU;
+    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
     static uint64_t actualCU;
