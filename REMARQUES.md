@@ -15,6 +15,7 @@ Pour résoudre cela, je pense qu'il faut augmenter considérablement le nombre d
 ## maxNbEvaluationPerPolicy
 Le paramètre `maxNbEvaluationPerPolicy` permet de fixer le nombre d'évaluation (en mode LearningMode::Training) pendant lequel le score d'une root sera mis à jour.
 Par exemple, 
+
 - A sa première évaluation, la root obtient un score de 10.0, son score moyenné est 10.0
 - A la seconde évaluation, la root obtient un score de 15.0, son score moyenné est 12.5 (= (15*1 + 10*1) / 2)
 - A la troisième évaluation, la root obtient un score de 11.0, son score moyenné est 12.0 (= (11*1 + 12.5*2) / 3)
@@ -38,8 +39,46 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
   * plus de roots (~2000)
   * moins de survivants (~ratioDeletedRoots ~0.95)
 
-**2000 roots - 0.90 ratioDeletedRoots**
+**2000 roots - 0.90 ratioDeletedRoots** (Kelly le met à 0.5 pour la diversité, mais il en faut pas trop)
 
-* Ajouter de nouvelles instructions (à discuter)
-* Essayer d'hériter du ClassificationLearningEnvironment.
+* Ajouter de nouvelles instructions (à discuter)**(peut etre plus tard)**
+* Essayer d'hériter du ClassificationLearningEnvironment. **(peut etre plus tard)**
 * Essayer de faire des TPG spécifiques à chaque type de découpe (i.e. Action binaire) plutôt que d'en faire un pour toutes les actions.
+
+
+
+# Lancer Entrainement sur la machine 24 coeurs
+
+#### Se log sur la machine
+
+aller sur  *vpn.insa-rennes.fr*
+
+Si pas fait, installer le .exe pour windows (pour la sécu)
+
+Se login sur *SSH HTML5 v2 Dynamique IETR*
+
+**pc-eii21.insa-rennes.fr**
+
+**identifiant et mdp INSA**
+
+````bash
+cmake .. -DCMAKE_BUILD_TYPE=Release             // sous Linux
+cmake --build . --target runTests -- -j      	// build gegelati et vérifie qu'elle fonctionne
+												// -- pour dire que les arguments suivants sont pour GCC
+./bin/runTests
+sudo cmake --build . --target install -- -j
+````
+
+#### Trick pour lancer une exec via SSH et qu'il continue
+
+````bash
+nohup ./nom_de_lexec > std.log &
+// Pour voir ou il en est
+tail -f std.log
+// (ou cat)
+
+// Pour l'arreter
+htop
+*F5* Pour trouver le process parent puis *F9* (fait un kill)
+````
+
