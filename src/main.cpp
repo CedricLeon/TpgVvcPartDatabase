@@ -89,8 +89,8 @@ int main()
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t nbTargetsLoaded = params.maxNbActionsPerEval * 10;                 // 10 000
-    uint8_t nbGeneTargetChange = 5;                                             // 5
+    uint64_t nbTargetsLoaded = params.maxNbActionsPerEval * 10;                  // 10 000
+    uint8_t nbGeneTargetChange = 20;                                             // 5
 
     // Instantiate the LearningEnvironment
     PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange);
