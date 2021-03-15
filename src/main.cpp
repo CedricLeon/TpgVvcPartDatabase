@@ -1,22 +1,18 @@
 #include <iostream>
-#include <cstdlib>
-#include <ctime>
 
-#define _USE_MATH_DEFINES // To get M_PI
+//#define _USE_MATH_DEFINES // To get M_PI
 
-#include <math.h>
-#include <numeric>
+#include <cmath>
 #include <thread>
 #include <atomic>
-#include <chrono>
-#include <inttypes.h>
+#include <cinttypes>
 
 #include <gegelati.h>
 
 #include "../include/PartCU.h"
 
 #ifndef NB_GENERATIONS
-#define NB_GENERATIONS 1200
+#define NB_GENERATIONS 2000
 #endif
 
 void getKey(std::atomic<bool>& exit)
@@ -93,7 +89,7 @@ int main()
     uint8_t nbGeneTargetChange = 30;                                             // 5
 
     // Instantiate the LearningEnvironment
-    PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange);
+    PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange, 0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
@@ -103,13 +99,13 @@ int main()
     la.init();
 
     // Init the best Policy
-    const TPG::TPGVertex* bestRoot = NULL;
+    //const TPG::TPGVertex* bestRoot = NULL; // unused ?
 
     // Start a thread for controlling the loop
 #ifndef NO_CONSOLE_CONTROL
     // Console
     std::atomic<bool> exitProgram = true; // (set to false by other thread)
-    std::atomic<uint64_t> generation = 0;
+    //std::atomic<uint64_t> generation = 0;
 
     std::thread threadKeyboard(getKey, std::ref(exitProgram));
 
@@ -139,18 +135,19 @@ int main()
             // ---  Deleting old targets ---
             if (i != 0) // Don't clear trainingTargets before initializing them
             {
-                for (int idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange */; idx_targ++)
+                LE.reset(i);
+                for (uint64_t idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange */; idx_targ++)
                     delete PartCU::trainingTargetsCU[idx_targ];   // targets are allocated in getRandomCU()
                 PartCU::trainingTargetsCU.clear();
                 PartCU::trainingTargetsOptimalSplits.clear();
-                PartCU::actualCU = 0;
+                LE.actualCU = 0;
             }
 
             // ---  Loading next targets ---
-            for (int idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange*/; idx_targ++)
+            for (uint64_t idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange*/; idx_targ++)
             {
-                Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ);
-                PartCU::trainingTargetsCU.emplace_back(target);
+                Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU();
+                PartCU::trainingTargetsCU.push_back(target);
                 // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
             }
         }

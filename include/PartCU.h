@@ -9,13 +9,12 @@
 #include <gegelati.h>
 // #include <array2DWrapper.h>
 
-class PartCU : public Learn::LearningEnvironment
-{
+class PartCU : public Learn::LearningEnvironment {
 private:
 
     // ----- Constant -----
     // Number of different actions for the Agent
-    static const uint8_t  NB_ACTIONS = 6;
+    static const uint8_t NB_ACTIONS = 6;
     // On 1.4M elements in the database, we use 80% : 
     static const uint32_t NB_TRAINING_ELEMENTS = 1136424;
 
@@ -57,38 +56,46 @@ public:
     // Number of actions per Evaluation, initialized by params.json
     const uint64_t MAX_NB_ACTIONS_PER_EVAL;
     // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
-    const uint8_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
+    const uint8_t NB_GENERATION_BEFORE_TARGETS_CHANGE;
 
     /**
     * \brief List of CU datas and their corresponding optimal split
     * Each of those vectors contains ${MAX_NB_ACTIONS_PER_EVAL} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
-    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<Data::PrimitiveTypeArray<uint8_t> *> trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
-    static uint64_t actualCU;
+    uint64_t actualCU;
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneration) : LearningEnvironment(NB_ACTIONS),
-                                            availableActions(actions),
-                                            MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
-                                            NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneration),
-                                            score(0),
-                                            currentCU(32*32),
-                                            optimal_split(6)   // Unexisting split
-                                            {}
+    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneration, size_t seed)
+            : LearningEnvironment(NB_ACTIONS),
+              rng(seed),
+              availableActions(actions),
+              score(0),
+              currentCU(32 * 32),
+              optimal_split(6),   // Unexisting split
+              MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
+              NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneration),
+              actualCU(0){}
 
-    uint8_t getNbGenerationsBeforeTargetChange();
     void LoadNextCU();
-    Data::PrimitiveTypeArray<uint8_t>* getRandomCU(int index);
+
+    Data::PrimitiveTypeArray<uint8_t> *getRandomCU();
 
     // -------- LearningEnvironment --------
-    LearningEnvironment* clone() const;
+    LearningEnvironment *clone() const;
+
     bool isCopyable() const;
+
     void doAction(uint64_t actionID);
+
     void reset(size_t seed = 0, Learn::LearningMode mode = Learn::TRAINING);
+
     std::vector<std::reference_wrapper<const Data::DataHandler>> getDataSources();
+
     double getScore() const;
+
     bool isTerminal() const;
 };
 

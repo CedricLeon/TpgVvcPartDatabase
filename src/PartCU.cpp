@@ -1,37 +1,32 @@
 #include "../include/PartCU.h"
 #include <chrono>       // use to time list initialisation
 #include <vector>
-#include <algorithm>   // for random_shuffle
 
 // ********************************************************************* //
 // ************************** GEGELATI FUNCTIONS *********************** //
 // ********************************************************************* //
 
-void PartCU::doAction(uint64_t actionID)
-{
+void PartCU::doAction(uint64_t actionID) {
     // Pour le soft dans VVC on resize avant l'action
 
     // Managing the reward (+1 if the action match the best split, else +0)
-    if(actionID == optimal_split)
+    if (actionID == optimal_split)
         score++;
 
     // Loading next CU
     LoadNextCU();
 }
 
-std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSources()
-{
+std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSources() {
     // Return a vector containing every element constituting the State of the environment
-    auto result = std::vector<std::reference_wrapper<const Data::DataHandler>>();
-    result.push_back(this->currentCU);
+    std::vector<std::reference_wrapper<const Data::DataHandler>> result{this->currentCU};
 
     return result;
 }
 
-void PartCU::reset(size_t seed, Learn::LearningMode mode)
-{
+void PartCU::reset(size_t seed, Learn::LearningMode mode) {
     // RNG Control : Create seed from seed and mode
-    size_t hash_seed = Data::Hash<size_t>()(seed) ^ Data::Hash<Learn::LearningMode>()(mode);
+    size_t hash_seed = Data::Hash<size_t>()(seed) ^Data::Hash<Learn::LearningMode>()(mode);
     // Reset the RNG
     this->rng.setSeed(hash_seed);
 
@@ -42,24 +37,20 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode)
     LoadNextCU();
 }
 
-Learn::LearningEnvironment* PartCU::clone() const
-{
+Learn::LearningEnvironment *PartCU::clone() const {
     return new PartCU(*this);
 }
 
-bool PartCU::isCopyable() const
-{
+bool PartCU::isCopyable() const {
     return true; // false : pour eviter qu'il se lance en parallel (Cf LearningAgent)
 }
 
-double PartCU::getScore() const
-{
+double PartCU::getScore() const {
     // Return the RDO Cost ? (for VVC software)
     return score;
 }
 
-bool PartCU::isTerminal() const
-{
+bool PartCU::isTerminal() const {
     // Return if the job is over
     return false;
 }
@@ -68,63 +59,56 @@ bool PartCU::isTerminal() const
 // *************************** PartCU FUNCTIONS ************************ //
 // ********************************************************************* //
 
-std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::trainingTargetsCU; // Array2DWrapper
+std::vector<Data::PrimitiveTypeArray<uint8_t> *> PartCU::trainingTargetsCU; // Array2DWrapper
 std::vector<uint8_t> PartCU::trainingTargetsOptimalSplits;
-uint64_t PartCU::actualCU = 0;
 
-uint8_t PartCU::getNbGenerationsBeforeTargetChange()
-{
-    return NB_GENERATION_BEFORE_TARGETS_CHANGE;
-}
-
-Data::PrimitiveTypeArray<uint8_t>* PartCU::getRandomCU(int index)
-{
+Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU() {
     // ------------------ Opening and Reading a random CU file ------------------
-    uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS-1);
+    uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
-    char current_CU_path[100] = "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/";
+    char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_32x32_27/";
     char bin_extension[10] = ".bin";
     std::strcat(current_CU_path, next_CU_number_string);
     std::strcat(current_CU_path, bin_extension);
 
     // Openning the file
-    std::FILE* input = std::fopen(current_CU_path, "r");
-    if (!input)
-    {
+    std::FILE *input = std::fopen(current_CU_path, "r");
+    if (!input) {
         std::perror("File opening failed");
         return nullptr; // return EXIT_FAILURE;
     }
 
     // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
-    uint8_t contents[32*32+1];
-    std::fread(&contents[0], 1, 32*32+1, input);
+    uint8_t contents[32 * 32 + 1];
+    int count = std::fread(&contents[0], 1, 32 * 32 + 1, input);
+    if (count != 32 * 32 + 1)
+        std::perror("C'est pas bien");
     // Important ...
     std::fclose(input);
 
     // Creating a new PrimitiveTypeArray<uint8_t> and filling it
-    Data::PrimitiveTypeArray<uint8_t>* randomCU = new Data::PrimitiveTypeArray<uint8_t>(32*32);
-    for (uint32_t pxlIndex = 0; pxlIndex < 32*32; pxlIndex++)
+    Data::PrimitiveTypeArray<uint8_t> *randomCU = new Data::PrimitiveTypeArray<uint8_t>(32 * 32);
+    for (uint32_t pxlIndex = 0; pxlIndex < 32 * 32; pxlIndex++)
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
     // Updating the corresponding optimal split
-    PartCU::trainingTargetsOptimalSplits.emplace_back(contents[1024]);
+    PartCU::trainingTargetsOptimalSplits.push_back(contents[1024]);
 
     return randomCU;
 }
 
-void PartCU::LoadNextCU()
-{
+void PartCU::LoadNextCU() {
     // Checking validity is no longer necessary
-    //try
-    //{
+    try {
         // Updating next CU's values
+        //std::cout
         this->currentCU = *PartCU::trainingTargetsCU[PartCU::actualCU];
-    //}
-    //catch (std::domain_error e)
-    //{
-    //    std::cout << "LoadNextCU (actualCU : " << actualCU << "), PrimitiveTypeArray's operator= : " << e.what() << std::endl;
-    //}
+    }
+    catch (std::domain_error &e) {
+        std::cout << "LoadNextCU (actualCU : " << actualCU << "), PrimitiveTypeArray's operator= : " << e.what()
+                  << std::endl;
+    }
 
     // Updating next split solution
     this->optimal_split = PartCU::trainingTargetsOptimalSplits[PartCU::actualCU];
