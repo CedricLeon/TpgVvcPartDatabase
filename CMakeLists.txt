@@ -66,5 +66,12 @@ add_executable(${PROJECT_NAME}
                ../include/PartCU.h
                ../params.json
 )
+
+# Add definitions for testing purposes (-DTESTING=1)
+if(${TESTING})
+    MESSAGE("Testing mode")
+    add_definitions(-DNO_CONSOLE_CONTROL=1)
+endif()
+
 target_link_libraries(${PROJECT_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${PROJECT_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
