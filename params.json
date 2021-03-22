@@ -9,7 +9,7 @@
 
 	"mutation": {
 		"tpg": {
-			"nbRoots": 2000,
+			"nbRoots": 100,
 			"maxInitOutgoingEdges": 3,
 			"maxOutgoingEdges": 5,
 			"pEdgeDeletion": 0.7,

@@ -85,11 +85,11 @@ int main()
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t nbTargetsLoaded = params.maxNbActionsPerEval * 10;                  // 10 000
-    uint8_t nbGeneTargetChange = 30;                                             // 5
+    uint64_t maxNbActionsPerEval = 100 /*params.maxNbActionsPerEval*/;                  // 10 000
+    uint8_t nbGeneTargetChange = 10;                                                   // 30
 
     // Instantiate the LearningEnvironment
-    PartCU LE({0, 1, 2, 3, 4, 5}, nbTargetsLoaded, nbGeneTargetChange, 0);
+    PartCU LE({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, 0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
 
@@ -125,7 +125,8 @@ int main()
     stats.open("bestPolicyStats.md");
     Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
 
-    // Used as it is (nbGeneTargetChange is commented in loops), we load 10 000 CUs and we use them for every roots during 5 generations
+    // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
+    // For Validation, 1 000 CUs are loaded and used forever
     // Main training Loop
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
@@ -136,17 +137,26 @@ int main()
             if (i != 0) // Don't clear trainingTargets before initializing them
             {
                 LE.reset(i);
-                for (uint64_t idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange */; idx_targ++)
+                for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval/* *nbGeneTargetChange */; idx_targ++)
                     delete PartCU::trainingTargetsCU[idx_targ];   // targets are allocated in getRandomCU()
                 PartCU::trainingTargetsCU.clear();
                 PartCU::trainingTargetsOptimalSplits.clear();
-                LE.actualCU = 0;
+                LE.actualTrainingCU = 0;
             }
+            /*else        // Load VALIDATION Targets
+            {
+                for (uint64_t idx_targ = 0; idx_targ < LE.NB_VALIDATION_TARGETS; idx_targ++)
+                {
+                    Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
+                    PartCU::validationTargetsCU.emplace_back(target);
+                    // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
+                } 
+            }*/
 
             // ---  Loading next targets ---
-            for (uint64_t idx_targ = 0; idx_targ < nbTargetsLoaded/* *nbGeneTargetChange*/; idx_targ++)
+            for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval/* *nbGeneTargetChange*/; idx_targ++)
             {
-                Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU();
+                Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
                 PartCU::trainingTargetsCU.push_back(target);
                 // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
             }

@@ -40,6 +40,13 @@ private:
     uint64_t score;
 
     /**
+    * \brief Current LearningMode of the LearningEnvironment.
+    * Either TRAINING, either VALIDATION, switch set of preloaded targets
+    * (TRAINING : trainingTargetsCU, VALIDATION : validationTargetsCU)
+    */
+    Learn::LearningMode currentMode;
+
+    /**
     * \brief Current State of the environment
     * Vector containing all pixels of the current CU
     * CU are 32x32 => 1024 values
@@ -60,15 +67,20 @@ public:
 
     /**
     * \brief List of CU datas and their corresponding optimal split
-    * Each of those vectors contains ${MAX_NB_ACTIONS_PER_EVAL} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
+    * Each of those vectors contains ${NB_TRAINING_TARGETS} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
     static std::vector<Data::PrimitiveTypeArray<uint8_t> *> trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
-    uint64_t actualCU;
+    uint64_t actualTrainingCU;
+    // ****** VALIDATION Arguments ******
+    /*const uint64_t NB_VALIDATION_TARGETS;       // default 1 000
+    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> validationTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<uint8_t> validationTargetsOptimalSplits;
+    uint64_t actualValidationCU;*/
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneration, size_t seed)
+    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneTargetChange, size_t seed)
             : LearningEnvironment(NB_ACTIONS),
               rng(seed),
               availableActions(actions),
@@ -76,26 +88,19 @@ public:
               currentCU(32 * 32),
               optimal_split(6),   // Unexisting split
               MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
-              NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneration),
-              actualCU(0){}
+              NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
+              actualTrainingCU(0){}
 
     void LoadNextCU();
-
-    Data::PrimitiveTypeArray<uint8_t> *getRandomCU();
+    Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
 
     // -------- LearningEnvironment --------
     LearningEnvironment *clone() const;
-
     bool isCopyable() const;
-
     void doAction(uint64_t actionID);
-
     void reset(size_t seed = 0, Learn::LearningMode mode = Learn::TRAINING);
-
     std::vector<std::reference_wrapper<const Data::DataHandler>> getDataSources();
-
     double getScore() const;
-
     bool isTerminal() const;
 };
 

@@ -13,16 +13,16 @@ C'est assez gênant, car cela veut dire qu'à la faveur d'un set d'imagette "fav
 Pour résoudre cela, je pense qu'il faut augmenter considérablement le nombre d'imagettes utilisées à chaque chargement.
 
 ## maxNbEvaluationPerPolicy
-Le paramètre `maxNbEvaluationPerPolicy` permet de fixer le nombre d'évaluation (en mode LearningMode::Training) pendant lequel le score d'une root sera mis à jour.
+Le paramètre `maxNbEvaluationPerPolicy` permet de fixer le nombre d'évaluation (en mode Learn::LearningMode::Training) pendant lequel le score d'une root sera mis à jour.
 Par exemple, 
 
 - A sa première évaluation, la root obtient un score de 10.0, son score moyenné est 10.0
 - A la seconde évaluation, la root obtient un score de 15.0, son score moyenné est 12.5 (= (15*1 + 10*1) / 2)
 - A la troisième évaluation, la root obtient un score de 11.0, son score moyenné est 12.0 (= (11*1 + 12.5*2) / 3)
 
-Une fois arrivé à autant d'évaluation que défini par maxNbEvaluationPerPolicy, le score de la root (en mode Training) ne sera plus évalué, et le score enregistré sera retenu. Cela permet de gagner du temps sur les futures évaluations.
+Une fois arrivé à autant d'évaluation que défini par `maxNbEvaluationPerPolicy` , le score de la root (en mode Training) ne sera plus évalué, et le score enregistré sera retenu. Cela permet de gagner du temps sur les futures évaluations.
 
-Dans ton cas de figure, le problème est que chaque root est évaluée 1 fois par génération, et le maxNbEvaluationPerPolicy est fixé à 10. Etant donné que le data-set est mis à jour toutes les 5 générations, il y a de grande chance qu'une root soit réévaluée plusieurs fois (i.e. sur plusieurs générations successives) sur le même set de 1000 imagettes. Cela n'est évidemment pas très bon pour la validité du score obtenu. De plus, comme le score est très volatile d'un set d'imagettes à un autre, le score calculé n'est pas forcément très représentatif.
+Dans ton cas de figure, le problème est que chaque root est évaluée 1 fois par génération, et le `maxNbEvaluationPerPolicy` est fixé à 10. Etant donné que le data-set est mis à jour toutes les 5 générations, il y a de grande chance qu'une root soit réévaluée plusieurs fois (i.e. sur plusieurs générations successives) sur le même set de 1000 imagettes. Cela n'est évidemment pas très bon pour la validité du score obtenu. De plus, comme le score est très volatile d'un set d'imagettes à un autre, le score calculé n'est pas forcément très représentatif.
 
 Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes présentées à chaque génération ne soit pas le même. Pour cela, je pense que tu peux facilement charger quelques dizaine de milliers d'imagettes en mémoire, et les présenter aléatoirement aux roots pendant de nombreuses générations.
 
@@ -31,8 +31,8 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
 ## Pistes d'améliorations futures
 
 ### Amélioration des perfs
-* Utilisation du nouveau Array2DWrapper à la place du PrimitiveTypeArray (pas forcément ultra conséquent)
-* Faire du trainingTargetCU un attribut statique. (cela évitera le temps nécessaire à sa copie lors du clonage du learningEnvironment.) **DONE**
+* Utilisation du nouveau Array2DWrapper à la place du `PrimitiveTypeArray `(pas forcément ultra conséquent)
+* Faire du `trainingTargetCU` un attribut statique. (cela évitera le temps nécessaire à sa copie lors du clonage du learningEnvironment.) **DONE**
 
 ### Amélioration du score
 * Changer les paramètres pour qu'ils soient plus favorables. (à discuter)
@@ -41,9 +41,15 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
 
 **2000 roots - 0.90 ratioDeletedRoots** (Kelly le met à 0.5 pour la diversité, mais il en faut pas trop : pour l'instant test avec 0.90)
 
-* Ajouter de nouvelles instructions (à discuter) **(peut etre plus tard)**
+* Ajouter de nouvelles instructions (à discuter) **(peut etre plus tard : convolution)**
 * Essayer d'hériter du ClassificationLearningEnvironment. **(peut etre plus tard)**
 * Essayer de faire des TPG spécifiques à chaque type de découpe (i.e. Action binaire) plutôt que d'en faire un pour toutes les actions. **(On verra plus tard mais on pourra même faire un truc plus meta avec un 7ème TPG qui manage la sortie des 6 autres)**
+
+
+
+boucler sur les optimal splits après le chargement pour afficher l'équilibre du set
+
+faire un autre vector de validations et de 1000
 
 
 
@@ -51,15 +57,17 @@ Pour résoudre ce problème, il faudrait faire en sorte que le jeu d'imagettes p
 
 #### Se log sur la machine
 
-aller sur  *vpn.insa-rennes.fr*
+- aller sur  *vpn.insa-rennes.fr*
 
-Si pas fait, installer le .exe pour windows (pour la sécu)
+- Si pas fait, installer le .exe pour windows (pour la sécu)
 
-Se login sur *SSH HTML5 v2 Dynamique IETR*
+- Se login sur *SSH HTML5 v2 Dynamique IETR*
 
-pc-eii21.insa-rennes.fr
+- pc-eii21.insa-rennes.fr
 
-**identifiant et mdp INSA**
+- identifiant et mdp INSA
+
+
 
 ````bash
 cmake .. -DCMAKE_BUILD_TYPE=Release             // sous Linux

@@ -32,8 +32,11 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode) {
 
     // Reset the score
     score = 0;
+    
+    // Update the mode
+    this->currentMode = mode;
 
-    // Preload the first CU
+    // Preload the first CU (depending of the current mode)
     LoadNextCU();
 }
 
@@ -59,15 +62,20 @@ bool PartCU::isTerminal() const {
 // *************************** PartCU FUNCTIONS ************************ //
 // ********************************************************************* //
 
+// ****** TRAINING Arguments ******
 std::vector<Data::PrimitiveTypeArray<uint8_t> *> PartCU::trainingTargetsCU; // Array2DWrapper
 std::vector<uint8_t> PartCU::trainingTargetsOptimalSplits;
+// ****** VALIDATION Arguments ******
+//std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::validationTargetsCU; // Array2DWrapper
+//std::vector<uint8_t> PartCU::validationTargetsOptimalSplits;
 
-Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU() {
+Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::LearningMode mode) {
     // ------------------ Opening and Reading a random CU file ------------------
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
-    char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_32x32_27/";
+    char current_CU_path[100] = "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/";
+    // "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/" || "/home/cleonard/Data/dataset_tpg_32x32_27/"
     char bin_extension[10] = ".bin";
     std::strcat(current_CU_path, next_CU_number_string);
     std::strcat(current_CU_path, bin_extension);
@@ -80,10 +88,11 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU() {
     }
 
     // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
-    uint8_t contents[32 * 32 + 1];
-    int count = std::fread(&contents[0], 1, 32 * 32 + 1, input);
-    if (count != 32 * 32 + 1)
-        std::perror("C'est pas bien");
+    uint8_t contents[32*32+1];
+    /*int nbCharRead = */std::fread(&contents[0], 1, 32*32+1, input);
+    /*if (nbCharRead != 32*32+1)
+        std::perror("File Read failed");*/
+    // Dunno why it fails
     // Important ...
     std::fclose(input);
 
@@ -93,29 +102,40 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU() {
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
     // Updating the corresponding optimal split
-    PartCU::trainingTargetsOptimalSplits.push_back(contents[1024]);
+    //if (this->currentMode == Learn::LearningMode::TRAINING)
+        PartCU::trainingTargetsOptimalSplits.push_back(contents[1024]);
+    /*else if(this->currentMode == Learn::LearningMode::VALIDATION)
+        PartCU::validationTargetsOptimalSplits.emplace_back(contents[1024]);*/
 
     return randomCU;
 }
 
 void PartCU::LoadNextCU() {
     // Checking validity is no longer necessary
-    try {
-        // Updating next CU's values
-        //std::cout
-        this->currentCU = *PartCU::trainingTargetsCU[PartCU::actualCU];
+    if (this->currentMode == Learn::LearningMode::TRAINING)
+    {
+        this->currentCU = *PartCU::trainingTargetsCU[this->actualTrainingCU];
+        
+        // Updating next split solution
+        this->optimal_split = PartCU::trainingTargetsOptimalSplits[this->actualTrainingCU];
+        PartCU::actualTrainingCU++;
+        
+        // Looping on the beginning of training targets
+        if (PartCU::actualTrainingCU >= MAX_NB_ACTIONS_PER_EVAL)
+            PartCU::actualTrainingCU = 0;
     }
-    catch (std::domain_error &e) {
-        std::cout << "LoadNextCU (actualCU : " << actualCU << "), PrimitiveTypeArray's operator= : " << e.what()
-                  << std::endl;
-    }
+    /*else if (this->currentMode == Learn::LearningMode::VALIDATION)
+    {
+        this->currentCU = *PartCU::validationTargetsCU[PartCU::actualValidationCU];
 
-    // Updating next split solution
-    this->optimal_split = PartCU::trainingTargetsOptimalSplits[PartCU::actualCU];
-    PartCU::actualCU++;
-    // Looping on the beginning of training targets
-    if (PartCU::actualCU >= MAX_NB_ACTIONS_PER_EVAL/* * NB_GENERATION_BEFORE_TARGETS_CHANGE*/)
-        PartCU::actualCU = 0;
+        // Updating next split solution
+        this->optimal_split = PartCU::validationTargetsOptimalSplits[PartCU::actualValidationCU];
+        PartCU::actualValidationCU++;
+
+        // Looping on the beginning of training targets
+        if (PartCU::actualValidationCU >= NB_VALIDATION_TARGETS)
+            PartCU::actualValidationCU = 0;
+    }*/
 }
 
 /***********************************************************************
