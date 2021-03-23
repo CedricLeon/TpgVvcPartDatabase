@@ -52,8 +52,8 @@ int main()
     auto mult  = [](uint8_t a, uint8_t b)->uint8_t {return a * b; };
     //auto div   = [](uint8_t a, uint8_t b)->uint8_t {return a / b; };
     auto max   = [](uint8_t a, uint8_t b)->uint8_t {return std::max(a, b); };
-    auto ln    = [](uint8_t a)->uint8_t {return std::log(a); };
-    auto exp   = [](uint8_t a)->uint8_t {return std::exp(a); };
+    auto ln    = [](uint8_t a)->uint8_t {return std::log(a); };                 // Warning conversion 'doucle' to 'uint_8'
+    auto exp   = [](uint8_t a)->uint8_t {return std::exp(a); };                 // Warning conversion 'doucle' to 'uint_8'
 
     auto minus_double = [](double a, double b)->double {return a - b; };
     auto add_double = [](double a, double b)->double {return a + b; };
@@ -92,6 +92,20 @@ int main()
     PartCU LE({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, 0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
+    std::cout << "Parameters : "<< std::endl;
+    std::cout << "  - NB Actions Per Evaluation = " << maxNbActionsPerEval << std::endl;
+    std::cout << "  - NB Generation Before Targets Change = " << nbGeneTargetChange << std::endl;
+    std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
+
+    Environment env(set, LE.getDataSources(), 8);
+
+    // Instantiate the TPGGraph that we will load
+    auto tpg = TPG::TPGGraph(env);
+
+    // Create an importer for the best graph and imports it
+    std::cout << "Import graph" << std::endl;
+    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0000.dot", env, tpg);
+    dotImporter.importGraph();
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
     Learn::ParallelLearningAgent la(LE, set, params);

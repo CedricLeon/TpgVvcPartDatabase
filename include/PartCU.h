@@ -63,7 +63,7 @@ public:
     // Number of actions per Evaluation, initialized by params.json
     const uint64_t MAX_NB_ACTIONS_PER_EVAL;
     // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
-    const uint8_t NB_GENERATION_BEFORE_TARGETS_CHANGE;
+    const uint64_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
 
     /**
     * \brief List of CU datas and their corresponding optimal split
@@ -80,11 +80,12 @@ public:
     uint64_t actualValidationCU;*/
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint8_t nbGeneTargetChange, size_t seed)
+    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, size_t seed)
             : LearningEnvironment(NB_ACTIONS),
               rng(seed),
               availableActions(actions),
               score(0),
+              currentMode(Learn::LearningMode::TRAINING),
               currentCU(32 * 32),
               optimal_split(6),   // Unexisting split
               MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),

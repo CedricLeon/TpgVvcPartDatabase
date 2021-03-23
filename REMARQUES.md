@@ -80,9 +80,12 @@ sudo cmake --build . --target install -- -j
 #### Trick pour lancer une exec via SSH et qu'il continue
 
 ````bash
-nohup ./nom_de_lexec > std.log &
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release _DTESTING=1
+cmake --build .
+nohup ./nom_de_lexec > logs.txt &
 // Pour voir ou il en est
-tail -f std.log
+tail -f logs.txt
 // (ou cat)
 
 // Pour l'arreter
