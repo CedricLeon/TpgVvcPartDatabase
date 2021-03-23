@@ -61,7 +61,7 @@ public:
     // ---------- Intern Variables ----------
 
     // Number of actions per Evaluation, initialized by params.json
-    const uint64_t MAX_NB_ACTIONS_PER_EVAL;
+    const uint64_t NB_TRAINING_TARGETS;
     // In order to accelerate the Learning we preload targets (CUs) which will be used for X generations
     const uint64_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
 
@@ -69,18 +69,18 @@ public:
     * \brief List of CU datas and their corresponding optimal split
     * Each of those vectors contains ${NB_TRAINING_TARGETS} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
-    static std::vector<Data::PrimitiveTypeArray<uint8_t> *> trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
-    static std::vector<uint8_t> trainingTargetsOptimalSplits;
+    static std::vector<Data::PrimitiveTypeArray<uint8_t> *> *trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<uint8_t> *trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
     uint64_t actualTrainingCU;
     // ****** VALIDATION Arguments ******
-    /*const uint64_t NB_VALIDATION_TARGETS;       // default 1 000
-    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> validationTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
-    static std::vector<uint8_t> validationTargetsOptimalSplits;
-    uint64_t actualValidationCU;*/
+    const uint64_t NB_VALIDATION_TARGETS;       // default 1 000
+    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> *validationTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<uint8_t> *validationTargetsOptimalSplits;
+    uint64_t actualValidationCU;
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, size_t seed)
+    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
             : LearningEnvironment(NB_ACTIONS),
               rng(seed),
               availableActions(actions),
@@ -88,9 +88,10 @@ public:
               currentMode(Learn::LearningMode::TRAINING),
               currentCU(32 * 32),
               optimal_split(6),   // Unexisting split
-              MAX_NB_ACTIONS_PER_EVAL(nbActionsPerEval),
+              NB_TRAINING_TARGETS(nbActionsPerEval),
               NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
-              actualTrainingCU(0){}
+              NB_VALIDATION_TARGETS(nbValidationTarget),
+              actualTrainingCU(0), actualValidationCU(0) {}
 
     void LoadNextCU();
     Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);

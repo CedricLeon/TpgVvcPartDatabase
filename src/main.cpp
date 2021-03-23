@@ -85,32 +85,32 @@ int main()
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t maxNbActionsPerEval = 100 /*params.maxNbActionsPerEval*/;                  // 10 000
-    uint8_t nbGeneTargetChange = 10;                                                   // 30
+    uint64_t maxNbActionsPerEval = params.maxNbActionsPerEval;                  // 10 000
+    uint64_t nbGeneTargetChange = 30;                                                   // 30
+    uint64_t nbValidationTarget = 1000;                                                 // 1000
 
     // Instantiate the LearningEnvironment
-    PartCU LE({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, 0);
+    PartCU *LE = new PartCU({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Parameters : "<< std::endl;
-    std::cout << "  - NB Actions Per Evaluation = " << maxNbActionsPerEval << std::endl;
+    std::cout << "  - NB Training Targets = " << maxNbActionsPerEval << std::endl;
+    std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
     std::cout << "  - NB Generation Before Targets Change = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
 
-    Environment env(set, LE.getDataSources(), 8);
-
+    /*Environment env(set, LE.getDataSources(), 8);
     // Instantiate the TPGGraph that we will load
-    auto tpg = TPG::TPGGraph(env);
-
+    //auto tpg = TPG::TPGGraph(env);
     // Create an importer for the best graph and imports it
     std::cout << "Import graph" << std::endl;
-    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0000.dot", env, tpg);
-    dotImporter.importGraph();
+    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
+    dotImporter.importGraph();*/
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    Learn::ParallelLearningAgent la(LE, set, params);
-    //Learn::LearningAgent la(LE, set, params);   // USING Non-Parallel Agent to DEBUG
-    la.init();
+    Learn::ParallelLearningAgent *la = new Learn::ParallelLearningAgent(*LE, set, params);
+    //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
+    la->init();
 
     // Init the best Policy
     //const TPG::TPGVertex* bestRoot = NULL; // unused ?
@@ -129,15 +129,15 @@ int main()
 #endif
 
     // Basic logger
-    Log::LABasicLogger basicLogger(la);
+    Log::LABasicLogger basicLogger(*la);
 
     // Create an exporter for all graphs
-    File::TPGGraphDotExporter dotExporter("out_0000.dot", la.getTPGGraph());
+    File::TPGGraphDotExporter dotExporter("out_0000.dot", la->getTPGGraph());
 
     // Logging best policy stat.
-    std::ofstream stats;
+    std::ofstream stats;                                                // Warning : stats is uninitialized
     stats.open("bestPolicyStats.md");
-    Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
+    Log::LAPolicyStatsLogger policyStatsLogger(*la, stats);
 
     // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
     // For Validation, 1 000 CUs are loaded and used forever
@@ -150,29 +150,28 @@ int main()
             // ---  Deleting old targets ---
             if (i != 0) // Don't clear trainingTargets before initializing them
             {
-                LE.reset(i);
-                for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval/* *nbGeneTargetChange */; idx_targ++)
-                    delete PartCU::trainingTargetsCU[idx_targ];   // targets are allocated in getRandomCU()
-                PartCU::trainingTargetsCU.clear();
-                PartCU::trainingTargetsOptimalSplits.clear();
-                LE.actualTrainingCU = 0;
+                LE->reset(i);
+                for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
+                    delete PartCU::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
+                PartCU::trainingTargetsCU->clear();
+                PartCU::trainingTargetsOptimalSplits->clear();
+                LE->actualTrainingCU = 0;
             }
-            /*else        // Load VALIDATION Targets
+            else        // Load VALIDATION Targets at the beginning of the training (i == 0)
             {
-                for (uint64_t idx_targ = 0; idx_targ < LE.NB_VALIDATION_TARGETS; idx_targ++)
+                for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
                 {
-                    Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
-                    PartCU::validationTargetsCU.emplace_back(target);
-                    // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
+                    Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
+                    PartCU::validationTargetsCU->push_back(target);
                 } 
-            }*/
+            }
 
             // ---  Loading next targets ---
-            for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval/* *nbGeneTargetChange*/; idx_targ++)
+            for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
             {
-                Data::PrimitiveTypeArray<uint8_t>* target = LE.getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
-                PartCU::trainingTargetsCU.push_back(target);
-                // Optimal split is saved in LE.trainingTargetsOptimalSplits inside getRandomCU()
+                Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
+                PartCU::trainingTargetsCU->push_back(target);
+                // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
             }
         }
 
@@ -181,17 +180,17 @@ int main()
         dotExporter.setNewFilePath(buff);
         dotExporter.print();
 
-        la.trainOneGeneration(i);
+        la->trainOneGeneration(i);
     }
 
     // After training, keep the best policy
-    la.keepBestPolicy();
+    la->keepBestPolicy();
     dotExporter.setNewFilePath("out_best.dot");
     dotExporter.print();
 
     TPG::PolicyStats ps;
-    ps.setEnvironment(la.getTPGGraph().getEnvironment());
-    ps.analyzePolicy(la.getBestRoot().first);
+    ps.setEnvironment(la->getTPGGraph().getEnvironment());
+    ps.analyzePolicy(la->getBestRoot().first);
     std::ofstream bestStats;
     bestStats.open("out_best_stats.md");
     bestStats << ps;

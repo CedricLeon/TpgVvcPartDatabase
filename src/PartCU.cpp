@@ -50,7 +50,7 @@ bool PartCU::isCopyable() const {
 
 double PartCU::getScore() const {
     // Return the RDO Cost ? (for VVC software)
-    return score;
+    return (double) score;
 }
 
 bool PartCU::isTerminal() const {
@@ -63,11 +63,11 @@ bool PartCU::isTerminal() const {
 // ********************************************************************* //
 
 // ****** TRAINING Arguments ******
-std::vector<Data::PrimitiveTypeArray<uint8_t> *> PartCU::trainingTargetsCU; // Array2DWrapper
-std::vector<uint8_t> PartCU::trainingTargetsOptimalSplits;
+std::vector<Data::PrimitiveTypeArray<uint8_t> *> *PartCU::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray<uint8_t>*>; // Array2DWrapper
+std::vector<uint8_t> *PartCU::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
 // ****** VALIDATION Arguments ******
-//std::vector<Data::PrimitiveTypeArray<uint8_t>*> PartCU::validationTargetsCU; // Array2DWrapper
-//std::vector<uint8_t> PartCU::validationTargetsOptimalSplits;
+std::vector<Data::PrimitiveTypeArray<uint8_t>*> *PartCU::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray<uint8_t>*>;  // Array2DWrapper
+std::vector<uint8_t> *PartCU::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
 Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::LearningMode mode) {
     // ------------------ Opening and Reading a random CU file ------------------
@@ -93,6 +93,7 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
     /*if (nbCharRead != 32*32+1)
         std::perror("File Read failed");*/
     // Dunno why it fails
+
     // Important ...
     std::fclose(input);
 
@@ -101,11 +102,11 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
     for (uint32_t pxlIndex = 0; pxlIndex < 32 * 32; pxlIndex++)
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
-    // Updating the corresponding optimal split
-    //if (this->currentMode == Learn::LearningMode::TRAINING)
-        PartCU::trainingTargetsOptimalSplits.push_back(contents[1024]);
-    /*else if(this->currentMode == Learn::LearningMode::VALIDATION)
-        PartCU::validationTargetsOptimalSplits.emplace_back(contents[1024]);*/
+    // Updating the corresponding optimal split depending of the current mode
+    if (mode == Learn::LearningMode::TRAINING)
+        PartCU::trainingTargetsOptimalSplits->push_back(contents[1024]);
+    else if (mode == Learn::LearningMode::VALIDATION)
+        PartCU::validationTargetsOptimalSplits->push_back(contents[1024]);
 
     return randomCU;
 }
@@ -114,28 +115,28 @@ void PartCU::LoadNextCU() {
     // Checking validity is no longer necessary
     if (this->currentMode == Learn::LearningMode::TRAINING)
     {
-        this->currentCU = *PartCU::trainingTargetsCU[this->actualTrainingCU];
+        this->currentCU = *PartCU::trainingTargetsCU->at(this->actualTrainingCU);
         
         // Updating next split solution
-        this->optimal_split = PartCU::trainingTargetsOptimalSplits[this->actualTrainingCU];
-        PartCU::actualTrainingCU++;
+        this->optimal_split = PartCU::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
+        this->actualTrainingCU++;
         
         // Looping on the beginning of training targets
-        if (PartCU::actualTrainingCU >= MAX_NB_ACTIONS_PER_EVAL)
-            PartCU::actualTrainingCU = 0;
+        if (this->actualTrainingCU >= NB_TRAINING_TARGETS)
+            this->actualTrainingCU = 0;
     }
-    /*else if (this->currentMode == Learn::LearningMode::VALIDATION)
+    else if (this->currentMode == Learn::LearningMode::VALIDATION)
     {
-        this->currentCU = *PartCU::validationTargetsCU[PartCU::actualValidationCU];
+        this->currentCU = *PartCU::validationTargetsCU->at(this->actualValidationCU);
 
         // Updating next split solution
-        this->optimal_split = PartCU::validationTargetsOptimalSplits[PartCU::actualValidationCU];
-        PartCU::actualValidationCU++;
+        this->optimal_split = PartCU::validationTargetsOptimalSplits->at(this->actualValidationCU);
+        this->actualValidationCU++;
 
-        // Looping on the beginning of training targets
-        if (PartCU::actualValidationCU >= NB_VALIDATION_TARGETS)
-            PartCU::actualValidationCU = 0;
-    }*/
+        // Looping on the beginning of validation targets
+        if (this->actualValidationCU >= NB_VALIDATION_TARGETS)
+            this->actualValidationCU = 0;
+    }
 }
 
 /***********************************************************************
