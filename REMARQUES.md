@@ -81,7 +81,7 @@ sudo cmake --build . --target install -- -j
 
 ````bash
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release _DTESTING=1
+cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING=1
 cmake --build .
 nohup ./nom_de_lexec > logs.txt &
 // Pour voir ou il en est
@@ -93,3 +93,29 @@ htop
 *F5* Pour trouver le process parent puis *F9* (fait un kill)
 ````
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- augmenter **maxNbActionsPerEval**
+- compter sur les 10 000, pour un histo
+- Pistes :
+  - pas les beta param
+  - hériter du LearningClassificationEnvironment (score  + équilibré, score F1, matrice de confusion / roots survivent pour ou le score global ou pour spécifiquement une classe ) => MNIST + doc classe
+  - Ajouter des instructions (mult. by cst / )
+- Faire 6 TPG binaires sur chaque classe
+- récupérer les programmes du TPG pour mélanger les techniques de ML

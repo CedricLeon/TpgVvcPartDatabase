@@ -99,13 +99,16 @@ int main()
     std::cout << "  - NB Generation Before Targets Change = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
 
-    /*Environment env(set, LE.getDataSources(), 8);
+    Environment env(set, LE->getDataSources(), 8);
     // Instantiate the TPGGraph that we will load
-    //auto tpg = TPG::TPGGraph(env);
+    auto tpg = TPG::TPGGraph(env);
     // Create an importer for the best graph and imports it
     std::cout << "Import graph" << std::endl;
-    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
-    dotImporter.importGraph();*/
+    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0077.dot", env, tpg);
+    dotImporter.importGraph();
+
+    // takes the first root of the graph, anyway out_best has only 1 root (the best)
+    auto root = tpg.getRootVertices().front();
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
     Learn::ParallelLearningAgent *la = new Learn::ParallelLearningAgent(*LE, set, params);
