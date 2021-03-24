@@ -9,7 +9,7 @@
 #include <gegelati.h>
 // #include <array2DWrapper.h>
 
-class PartCU : public Learn::LearningEnvironment {
+class PartCU : public Learn::ClassificationLearningEnvironment {
 private:
 
     // ----- Constant -----
@@ -81,7 +81,7 @@ public:
 
     // Constructor
     PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
-            : LearningEnvironment(NB_ACTIONS),
+            : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
               availableActions(actions),
               score(0),
@@ -90,8 +90,9 @@ public:
               optimal_split(6),   // Unexisting split
               NB_TRAINING_TARGETS(nbActionsPerEval),
               NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
+              actualTrainingCU(0),
               NB_VALIDATION_TARGETS(nbValidationTarget),
-              actualTrainingCU(0), actualValidationCU(0) {}
+              actualValidationCU(0) {}
 
     void LoadNextCU();
     Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);

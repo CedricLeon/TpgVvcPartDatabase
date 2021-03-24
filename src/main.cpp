@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 //#define _USE_MATH_DEFINES // To get M_PI
 
@@ -99,16 +100,16 @@ int main()
     std::cout << "  - NB Generation Before Targets Change = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
 
-    /*Environment env(set, LE.getDataSources(), 8);
+    Environment env(set, LE->getDataSources(), 8); // Nb de registres dans les programmes
     // Instantiate the TPGGraph that we will load
-    //auto tpg = TPG::TPGGraph(env);
+    auto tpg = TPG::TPGGraph(env);
     // Create an importer for the best graph and imports it
-    std::cout << "Import graph" << std::endl;
-    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
-    dotImporter.importGraph();*/
+    //std::cout << "Import graph" << std::endl;
+    //File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
+    //dotImporter.importGraph();
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    Learn::ParallelLearningAgent *la = new Learn::ParallelLearningAgent(*LE, set, params);
+    auto *la = new Learn::ParallelLearningAgent(*LE, set, params);
     //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la->init();
 
@@ -142,6 +143,9 @@ int main()
     // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
     // For Validation, 1 000 CUs are loaded and used forever
     // Main training Loop
+
+    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
+
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
         // Each ${nbGeneTargetChange} generation, we generate new random training targets so that different targets are used.
@@ -181,6 +185,47 @@ int main()
         dotExporter.print();
 
         la->trainOneGeneration(i);
+
+        /*// On recup la best root
+        const TPG::TPGVertex *bestRoot = la->getBestRoot().first;
+        std::shared_ptr<Learn::EvaluationResult> bestRootResult = la->getBestRoot().second;
+
+        // On relance une évaluation sur cette best root
+        LE->reset(0, Learn::LearningMode::VALIDATION);
+        auto tee = TPG::TPGExecutionEngine(env);
+        const std::vector<const TPG::TPGVertex*> vertices = la->getTPGGraph().getVertices();
+        auto iter = std::find(vertices.begin(), vertices.end(), bestRoot);
+        auto num = iter - vertices.begin();
+        auto job = la->makeJob(num, Learn::LearningMode::VALIDATION);
+        Learn::EvaluationResult result = *(la->evaluateJob(tee, *job, i, Learn::LearningMode::VALIDATION, *LE));
+
+        // On affiche la classificationTable
+        std::ofstream fichier(fileClassificationTableName.c_str(), std::ios::app);
+        if(fichier)
+        {
+            fichier << "-------------------------------------------" << std::endl;
+            fichier << "Gen : " << i << ", score de la best Root : " << bestRootResult->getResult() << std::endl;
+            fichier << "     NP     QT    BTH    BTV    TTH    TTV" << std::endl;
+
+            for(int x = 0; x < 6; x++)
+            {
+                fichier << x;
+                for(int y = 0; y < 6; y++)
+                {
+                    int nb = LE->getClassificationTable().at(x).at(y);
+
+                    int nbChar = (int) (1 + (nb == 0 ? 0 : log10(nb)));
+                    for(int nbEspace = 0; nbEspace < (6-nbChar); nbEspace++)
+                        fichier << " ";
+                    fichier << nb << " ";
+                }
+                fichier << std::endl;
+            }
+            fichier.close();
+        }else
+        {
+            std::cout << "Impossible d'ouvrir le fichier fileClassificationTableName." << std::endl;
+        }*/
     }
 
     // After training, keep the best policy
@@ -200,6 +245,8 @@ int main()
     // cleanup
     for (unsigned int i = 0; i < set.getNbInstructions(); i++)
         delete (&set.getInstruction(i));
+    delete la;
+    delete LE;
 
 #ifndef NO_CONSOLE_CONTROL
     // Exit the thread
