@@ -96,6 +96,7 @@ public:
 
     void LoadNextCU();
     Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
+    void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile);
 
     // -------- LearningEnvironment --------
     LearningEnvironment *clone() const;

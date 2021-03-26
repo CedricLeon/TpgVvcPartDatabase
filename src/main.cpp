@@ -101,12 +101,14 @@ int main()
     std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
 
     Environment env(set, LE->getDataSources(), 8); // Nb de registres dans les programmes
+
     // Instantiate the TPGGraph that we will load
-    auto tpg = TPG::TPGGraph(env);
+    //auto tpg = TPG::TPGGraph(env);
     // Create an importer for the best graph and imports it
     //std::cout << "Import graph" << std::endl;
     //File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
     //dotImporter.importGraph();
+
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
     auto *la = new Learn::ParallelLearningAgent(*LE, set, params);
@@ -186,6 +188,12 @@ int main()
 
         la->trainOneGeneration(i);
 
+        /**************************** Printing Classification Table using ugly loop *********************************/
+        const TPG::TPGVertex* bestRoot = la->getBestRoot().first;
+        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
+
+        /**************************** Trying To print Classification Table using getClassificationTable() *********************************/
+        
         /*// On recup la best root
         const TPG::TPGVertex *bestRoot = la->getBestRoot().first;
         std::shared_ptr<Learn::EvaluationResult> bestRootResult = la->getBestRoot().second;
