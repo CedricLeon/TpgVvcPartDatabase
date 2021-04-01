@@ -20,7 +20,7 @@
 		},
 
 		"prog": {
-			"maxProgramSize": 20,
+			"maxProgramSize": 50,
 			"pDelete": 0.5,
 			"pAdd": 0.5,
 			"pMutate": 1.0,
