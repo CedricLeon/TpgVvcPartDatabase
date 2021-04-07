@@ -64,6 +64,9 @@ int main()
     auto ln_double = [](double a)->double {return std::log(a); };
     auto exp_double = [](double a)->double {return std::exp(a); };
 
+    // Convolution
+    // Mul by const.
+
     // Add those instructions to instruction set
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(add)));
@@ -111,7 +114,7 @@ int main()
 
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    auto *la = new Learn::ParallelLearningAgent(*LE, set, params);
+    auto *la = new Learn::ClassificationLearningAgent(*LE, set, params);
     //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la->init();
 

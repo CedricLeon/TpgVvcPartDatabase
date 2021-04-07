@@ -1,5 +1,4 @@
 #include "../include/PartCU.h"
-#include <chrono>       // use to time list initialisation
 #include <vector>
 
 // ********************************************************************* //
@@ -7,11 +6,12 @@
 // ********************************************************************* //
 
 void PartCU::doAction(uint64_t actionID) {
-    // Pour le soft dans VVC on resize avant l'action
-
     // Managing the reward (+1 if the action match the best split, else +0)
-    if (actionID == optimal_split)
+    if (actionID == optimal_split) // this->currentClass
         score++;
+    // Cf MNIST.cpp (+ doc)
+    // default method classif LE
+    // ClassificationLearningEnvironment::doAction(actionID);
 
     // Loading next CU
     LoadNextCU();
@@ -38,6 +38,8 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode) {
 
     // Preload the first CU (depending of the current mode)
     LoadNextCU();
+
+    // printf pour les 1ere gens (sur les actions choisies)
 }
 
 Learn::LearningEnvironment *PartCU::clone() const {
