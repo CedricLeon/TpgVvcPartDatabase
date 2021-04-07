@@ -95,22 +95,6 @@ htop
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 - augmenter **maxNbActionsPerEval**
 - compter sur les 10 000, pour un histo
 - Pistes :

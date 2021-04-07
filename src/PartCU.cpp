@@ -1,5 +1,4 @@
 #include "../include/PartCU.h"
-#include <chrono>       // use to time list initialisation
 #include <vector>
 
 // ********************************************************************* //
@@ -7,11 +6,12 @@
 // ********************************************************************* //
 
 void PartCU::doAction(uint64_t actionID) {
-    // Pour le soft dans VVC on resize avant l'action
-
     // Managing the reward (+1 if the action match the best split, else +0)
-    if (actionID == optimal_split)
+    if (actionID == optimal_split) // this->currentClass
         score++;
+    // Cf MNIST.cpp (+ doc)
+    // default method classif LE
+    // ClassificationLearningEnvironment::doAction(actionID);
 
     // Loading next CU
     LoadNextCU();
@@ -38,6 +38,8 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode) {
 
     // Preload the first CU (depending of the current mode)
     LoadNextCU();
+
+    // printf pour les 1ere gens (sur les actions choisies)
 }
 
 Learn::LearningEnvironment *PartCU::clone() const {
@@ -45,7 +47,7 @@ Learn::LearningEnvironment *PartCU::clone() const {
 }
 
 bool PartCU::isCopyable() const {
-    return true; // false : pour eviter qu'il se lance en parallel (Cf LearningAgent)
+    return true; // false : to avoid ParallelLearning (Cf LearningAgent)
 }
 
 double PartCU::getScore() const {
@@ -149,8 +151,8 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
     // Print table of classif of the best
     TPG::TPGExecutionEngine tee(env, NULL);
 
-    // Change the MODE of mnist
-    this->reset(0, Learn::LearningMode::TESTING);    // TESTING in MNIST
+    // Change the MODE
+    this->reset(0, Learn::LearningMode::VALIDATION);    // TESTING in MNIST
 
     // Fill the table
     const int nbClasses = 6;
@@ -177,13 +179,21 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
         this->LoadNextCU();
     }
 
+    // Reset the learning mode to TESTING
+    this->reset(0, Learn::LearningMode::TESTING);
+
+    // Computing Score :
+    uint64_t score = 0;
+    for (int i = 0; i < nbClasses; i++)
+        score += classifTable[i][i];
+
     // Print the table
     std::ofstream fichier(outputFile.c_str(), std::ios::app);
     if(fichier)
     {
         fichier << "-------------------------------------------------" << std::endl;
-        fichier << "Gen : " << numGen << std::endl;
-        fichier << "    NP     QT    BTH    BTV    TTH    TTV    Nb" << std::endl;
+        fichier << "Gen : " << numGen << "   | Score  : " << score << std::endl;
+        fichier << "     NP     QT    BTH    BTV    TTH    TTV    Nb" << std::endl;
 
         for(int x = 0; x < nbClasses; x++)
         {
@@ -206,6 +216,6 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
         fichier.close();
     }else
     {
-        std::cout << "Impossible d'ouvrir le fichier " << outputFile << "." << std::endl;
+        std::cout << "Unable to open the file " << outputFile << "." << std::endl;
     }
 }
