@@ -76,7 +76,7 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
-    char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_32x32_27/";
+    char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/";
     // "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/" || "/home/cleonard/Data/dataset_tpg_32x32_27/"
     char bin_extension[10] = ".bin";
     std::strcat(current_CU_path, next_CU_number_string);
@@ -84,8 +84,11 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
 
     // Openning the file
     std::FILE *input = std::fopen(current_CU_path, "r");
-    if (!input) {
-        std::perror("File opening failed");
+    if (!input)
+    {
+        char error_file_path[300] = "File opening failed : ";
+        std::strcat(error_file_path, current_CU_path);
+        std::perror(error_file_path);
         return nullptr; // return EXIT_FAILURE;
     }
 

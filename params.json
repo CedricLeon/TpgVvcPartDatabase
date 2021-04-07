@@ -3,13 +3,13 @@
 	"archivingProbability": 0.01,
 	"nbIterationsPerPolicyEvaluation": 1,
 	"maxNbActionsPerEval": 1000,
-	"ratioDeletedRoots": 0.90,
+	"ratioDeletedRoots": 0.50,
 	"maxNbEvaluationPerPolicy": 10,        // maxNbEvaluationPerPolicy * maxNbActionsPerEval = nb d'évaluations par géné
 	"doValidation": true,
 
 	"mutation": {
 		"tpg": {
-			"nbRoots": 2000,
+			"nbRoots": 4000,
 			"maxInitOutgoingEdges": 3,
 			"maxOutgoingEdges": 5,
 			"pEdgeDeletion": 0.7,
@@ -20,7 +20,7 @@
 		},
 
 		"prog": {
-			"maxProgramSize": 20,
+			"maxProgramSize": 50,
 			"pDelete": 0.5,
 			"pAdd": 0.5,
 			"pMutate": 1.0,

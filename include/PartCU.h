@@ -16,7 +16,7 @@ private:
     // Number of different actions for the Agent
     static const uint8_t NB_ACTIONS = 6;
     // On 1.4M elements in the database, we use 80% : 
-    static const uint32_t NB_TRAINING_ELEMENTS = 1136424;
+    static const uint32_t NB_TRAINING_ELEMENTS = 329999; // Pour la database balanced, sinon : 1136424;
 
     // Randomness control
     Mutator::RNG rng;
