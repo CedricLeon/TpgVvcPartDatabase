@@ -3,8 +3,8 @@
 	"archivingProbability": 0.01,
 	"nbIterationsPerPolicyEvaluation": 1,
 	"maxNbActionsPerEval": 1000,
-	"ratioDeletedRoots": 0.50,
-	"maxNbEvaluationPerPolicy": 10,        // maxNbEvaluationPerPolicy * maxNbActionsPerEval = nb d'évaluations par géné
+	"ratioDeletedRoots": 0.90,
+	"maxNbEvaluationPerPolicy": 10,        // maxNbEvaluationPerPolicy * maxNbActionsPerEval = nb d'ï¿½valuations par gï¿½nï¿½
 	"doValidation": true,
 
 	"mutation": {

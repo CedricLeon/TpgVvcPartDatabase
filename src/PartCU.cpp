@@ -5,57 +5,58 @@
 // ************************** GEGELATI FUNCTIONS *********************** //
 // ********************************************************************* //
 
-void PartCU::doAction(uint64_t actionID) {
-    // Managing the reward (+1 if the action match the best split, else +0)
-    if (actionID == optimal_split) // this->currentClass
-        score++;
-    // Cf MNIST.cpp (+ doc)
-    // default method classif LE
-    // ClassificationLearningEnvironment::doAction(actionID);
+void PartCU::doAction(uint64_t actionID)
+{
+    // Call to default method to increment classificationTable
+    ClassificationLearningEnvironment::doAction(actionID);
 
     // Loading next CU
-    LoadNextCU();
+    this->LoadNextCU();
+
+    // Si nécessaire pour debugguer : printf des actions choisies pour les 1ere gen
 }
 
-std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSources() {
+std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSources()
+{
     // Return a vector containing every element constituting the State of the environment
     std::vector<std::reference_wrapper<const Data::DataHandler>> result{this->currentCU};
 
     return result;
 }
 
-void PartCU::reset(size_t seed, Learn::LearningMode mode) {
-    // RNG Control : Create seed from seed and mode
-    size_t hash_seed = Data::Hash<size_t>()(seed) ^Data::Hash<Learn::LearningMode>()(mode);
-    // Reset the RNG
-    this->rng.setSeed(hash_seed);
+void PartCU::reset(size_t seed, Learn::LearningMode mode)
+{
+    // Reset the classificationTable
+    ClassificationLearningEnvironment::reset(seed);
 
-    // Reset the score
-    score = 0;
-
-    // Update the mode
     this->currentMode = mode;
 
-    // Preload the first CU (depending of the current mode)
-    LoadNextCU();
+    // RNG Control : Create seed from seed and mode
+    //size_t hash_seed = Data::Hash<size_t>()(seed) ^Data::Hash<Learn::LearningMode>()(mode);
+    // Reset the RNG
+    this->rng.setSeed(/*hash_seed*/seed);
 
-    // printf pour les 1ere gens (sur les actions choisies)
+    // Preload the first CU (depending of the current mode)
+    this->LoadNextCU();
 }
 
-Learn::LearningEnvironment *PartCU::clone() const {
+Learn::LearningEnvironment *PartCU::clone() const
+{
     return new PartCU(*this);
 }
 
-bool PartCU::isCopyable() const {
+bool PartCU::isCopyable() const
+{
     return true; // false : to avoid ParallelLearning (Cf LearningAgent)
 }
 
-double PartCU::getScore() const {
-    // Return the RDO Cost ? (for VVC software)
-    return (double) score;
+double PartCU::getScore() const
+{
+    return ClassificationLearningEnvironment::getScore();
 }
 
-bool PartCU::isTerminal() const {
+bool PartCU::isTerminal() const
+{
     // Return if the job is over
     return false;
 }
@@ -96,16 +97,16 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
 
     // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
     uint8_t contents[32*32+1];
-    /*int nbCharRead = */std::fread(&contents[0], 1, 32*32+1, input);
-    /*if (nbCharRead != 32*32+1)
-        std::perror("File Read failed");*/
+    int nbCharRead = std::fread(&contents[0], 1, 32*32+1, input);
+    if (nbCharRead != 32*32+1)
+        std::perror("File Read failed");
     // Dunno why it fails
 
     // Important ...
     std::fclose(input);
 
     // Creating a new PrimitiveTypeArray<uint8_t> and filling it
-    Data::PrimitiveTypeArray<uint8_t> *randomCU = new Data::PrimitiveTypeArray<uint8_t>(32 * 32);
+    auto *randomCU = new Data::PrimitiveTypeArray<uint8_t>(32 * 32);
     for (uint32_t pxlIndex = 0; pxlIndex < 32 * 32; pxlIndex++)
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
@@ -125,7 +126,7 @@ void PartCU::LoadNextCU() {
         this->currentCU = *PartCU::trainingTargetsCU->at(this->actualTrainingCU);
 
         // Updating next split solution
-        this->optimal_split = PartCU::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
+        this->currentClass = PartCU::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
         this->actualTrainingCU++;
 
         // Looping on the beginning of training targets
@@ -137,7 +138,7 @@ void PartCU::LoadNextCU() {
         this->currentCU = *PartCU::validationTargetsCU->at(this->actualValidationCU);
 
         // Updating next split solution
-        this->optimal_split = PartCU::validationTargetsOptimalSplits->at(this->actualValidationCU);
+        this->currentClass = PartCU::validationTargetsOptimalSplits->at(this->actualValidationCU);
         this->actualValidationCU++;
 
         // Looping on the beginning of validation targets
@@ -148,11 +149,11 @@ void PartCU::LoadNextCU() {
 
 void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile)
 {
-    // Print table of classif of the best
-    TPG::TPGExecutionEngine tee(env, NULL);
+    // Print table of classification of the best
+    TPG::TPGExecutionEngine tee(env, nullptr);
 
     // Change the MODE
-    this->reset(0, Learn::LearningMode::VALIDATION);    // TESTING in MNIST
+    this->reset(0, Learn::LearningMode::VALIDATION);    // TESTING in MNIST, mais marche pas ici
 
     // Fill the table
     const int nbClasses = 6;
@@ -161,16 +162,16 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
     uint64_t nbPerClass[nbClasses] = { 0 };
     uint8_t actionID = -1;
 
-    for (int nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
+    for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
     {
         // Get answer
-        uint8_t optimalActionID = this->optimal_split;
+        uint8_t optimalActionID = this->currentClass;
         nbPerClass[optimalActionID]++;
 
         // Execute
         auto path = tee.executeFromRoot(*bestRoot);
         const TPG::TPGAction* action = (const TPG::TPGAction*)path.at(path.size() - 1);
-        actionID = (uint8_t)action->getActionID();
+        actionID = (uint8_t) action->getActionID();
 
         // Increment table
         classifTable[optimalActionID][actionID]++;
@@ -200,12 +201,12 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
             fichier << x;
             for(int y = 0; y < nbClasses; y++)
             {
-                int nb = classifTable[x][y];
+                int nb = classifTable[x][y]; //this->classificationTable.at(x).at(y);
 
                 int nbChar = (int) (1 + (nb == 0 ? 0 : log10(nb)));
                 for(int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
                     fichier << " ";
-                fichier << nb << " ";
+                fichier << nb << (x == y ? "-" : " ");
             }
             int nb = nbPerClass[x];
             int nbChar = (int)(1 + (nb == 0 ? 0 : log10(nb)));

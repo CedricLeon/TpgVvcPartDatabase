@@ -25,19 +25,19 @@ private:
     * \brief Available actions for the LearningAgent.
     * 6 different splits :
     *   - NP  (0) : Non-Partitionning
-    *   - QT  (1) : Quad-Tree Partitionning
+    *   - QT  (1) : Quad-Tree    Partitionning
     *   - BTH (2) : Binary-Tree  Horizontal
     *   - BTV (3) : Binary-Tree  Vertical
     *   - TTH (4) : Ternary-Tree Horizontal
     *   - TTV (5) : Ternary-Tree Vertical
     */
-    const std::vector<uint64_t> availableActions;
+    //const std::vector<uint64_t> availableActions;
 
     /**
     * \brief Learning Agent score for the current job
     * +1 each time he chose the best split, else +0
     */
-    uint64_t score;
+    //uint64_t score; // Managed by ClassificationLearningEnvironment
 
     /**
     * \brief Current LearningMode of the LearningEnvironment.
@@ -55,7 +55,9 @@ private:
 
     // ---------- Intern Variables ----------
     // Optimal split for the current CU extract from the .bin file
-    uint8_t optimal_split;
+    //uint8_t optimal_split;   // Now : this->currentClass
+
+    void LoadNextCU();
 
 public:
     // ---------- Intern Variables ----------
@@ -83,18 +85,17 @@ public:
     PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
             : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
-              availableActions(actions),
-              score(0),
+              //availableActions(actions),
+              //score(0),
               currentMode(Learn::LearningMode::TRAINING),
               currentCU(32 * 32),
-              optimal_split(6),   // Unexisting split
+              //optimal_split(6),   // Unexisting split
               NB_TRAINING_TARGETS(nbActionsPerEval),
               NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
               actualTrainingCU(0),
               NB_VALIDATION_TARGETS(nbValidationTarget),
               actualValidationCU(0) {}
 
-    void LoadNextCU();
     Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
     void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile);
 

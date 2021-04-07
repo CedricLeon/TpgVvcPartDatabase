@@ -89,12 +89,12 @@ int main()
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t maxNbActionsPerEval = params.maxNbActionsPerEval;                  // 10 000
+    uint64_t maxNbActionsPerEval = 10*params.maxNbActionsPerEval;                          // 10 000
     uint64_t nbGeneTargetChange = 30;                                                   // 30
     uint64_t nbValidationTarget = 1000;                                                 // 1000
 
     // Instantiate the LearningEnvironment
-    PartCU *LE = new PartCU({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
+    auto *LE = new PartCU({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Parameters : "<< std::endl;
@@ -112,11 +112,10 @@ int main()
     //File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
     //dotImporter.importGraph();
 
-
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    auto *la = new Learn::ClassificationLearningAgent(*LE, set, params);
+    Learn::ClassificationLearningAgent la(*LE, set, params);
     //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
-    la->init();
+    la.init();
 
     // Init the best Policy
     //const TPG::TPGVertex* bestRoot = NULL; // unused ?
@@ -135,15 +134,15 @@ int main()
 #endif
 
     // Basic logger
-    Log::LABasicLogger basicLogger(*la);
+    Log::LABasicLogger basicLogger(la);
 
     // Create an exporter for all graphs
-    File::TPGGraphDotExporter dotExporter("out_0000.dot", la->getTPGGraph());
+    File::TPGGraphDotExporter dotExporter("out_0000.dot", la.getTPGGraph());
 
     // Logging best policy stat.
     std::ofstream stats;                                                // Warning : stats is uninitialized
     stats.open("bestPolicyStats.md");
-    Log::LAPolicyStatsLogger policyStatsLogger(*la, stats);
+    Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
 
     // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
     // For Validation, 1 000 CUs are loaded and used forever
@@ -189,10 +188,10 @@ int main()
         dotExporter.setNewFilePath(buff);
         dotExporter.print();
 
-        la->trainOneGeneration(i);
+        la.trainOneGeneration(i);
 
         /**************************** Printing Classification Table using ugly loop *********************************/
-        const TPG::TPGVertex* bestRoot = la->getBestRoot().first;
+        const TPG::TPGVertex* bestRoot = la.getBestRoot().first;
         LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
 
         /**************************** Trying To print Classification Table using getClassificationTable() *********************************/
@@ -240,13 +239,13 @@ int main()
     }
 
     // After training, keep the best policy
-    la->keepBestPolicy();
+    la.keepBestPolicy();
     dotExporter.setNewFilePath("out_best.dot");
     dotExporter.print();
 
     TPG::PolicyStats ps;
-    ps.setEnvironment(la->getTPGGraph().getEnvironment());
-    ps.analyzePolicy(la->getBestRoot().first);
+    ps.setEnvironment(la.getTPGGraph().getEnvironment());
+    ps.analyzePolicy(la.getBestRoot().first);
     std::ofstream bestStats;
     bestStats.open("out_best_stats.md");
     bestStats << ps;
@@ -256,7 +255,6 @@ int main()
     // cleanup
     for (unsigned int i = 0; i < set.getNbInstructions(); i++)
         delete (&set.getInstruction(i));
-    delete la;
     delete LE;
 
 #ifndef NO_CONSOLE_CONTROL
