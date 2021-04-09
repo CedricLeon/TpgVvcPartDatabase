@@ -1,4 +1,4 @@
-ARCHIVE_NAME=./build/logs_ent7_newVers_0.5_20_5000.txt
+ARCHIVE_NAME=./ent9_classifTable.txt
 
 # Upload the built library onto transfer.sf
 PACKAGE_LOCATION=$(curl -F"file=@${ARCHIVE_NAME}" https://file.io)
