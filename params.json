@@ -4,12 +4,14 @@
 	"nbIterationsPerPolicyEvaluation": 1,
 	"maxNbActionsPerEval": 1000,
 	"ratioDeletedRoots": 0.90,
-	"maxNbEvaluationPerPolicy": 10,        // maxNbEvaluationPerPolicy * maxNbActionsPerEval = nb d'�valuations par g�n�
+	"maxNbEvaluationPerPolicy": 10,
 	"doValidation": true,
+	"nbProgramConstant": 3,
 
 	"mutation": {
 		"tpg": {
-			"nbRoots": 4000,
+			"nbRoots": 4000,	
+			"nbActions": 6,
 			"maxInitOutgoingEdges": 3,
 			"maxOutgoingEdges": 5,
 			"pEdgeDeletion": 0.7,
@@ -20,6 +22,9 @@
 		},
 
 		"prog": {
+			"minConstValue": 0,
+			"maxConstValue": 255,
+			"pConstantMutation": 0.5,
 			"maxProgramSize": 50,
 			"pDelete": 0.5,
 			"pAdd": 0.5,
