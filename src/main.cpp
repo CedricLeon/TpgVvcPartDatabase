@@ -48,33 +48,35 @@ int main()
 
     // Create the instruction set for programs
     Instructions::Set set;
-    auto minus = [](uint8_t a, uint8_t b)->uint8_t {return a - b; };
-    auto add   = [](uint8_t a, uint8_t b)->uint8_t {return a + b; };
-    auto mult  = [](uint8_t a, uint8_t b)->uint8_t {return a * b; };
-    //auto div   = [](uint8_t a, uint8_t b)->uint8_t {return a / b; };
-    auto max   = [](uint8_t a, uint8_t b)->uint8_t {return std::max(a, b); };
-    auto ln    = [](uint8_t a)->uint8_t {return std::log(a); };                 // Warning conversion 'doucle' to 'uint_8'
-    auto exp   = [](uint8_t a)->uint8_t {return std::exp(a); };                 // Warning conversion 'doucle' to 'uint_8'
+    auto minus = [](uint8_t a, uint8_t b)->double {return a - b; };
+    auto add   = [](uint8_t a, uint8_t b)->double {return a + b; };
+    auto mult  = [](uint8_t a, uint8_t b)->double {return a * b; };
+    auto div   = [](uint8_t a, uint8_t b)->double {return a / (double)b; }; // cast b to double to avoid div by zero (uint8_t)
+    auto max   = [](uint8_t a, uint8_t b)->double {return std::max(a, b); };
+    auto multByConst = [](uint8_t a, Data::Constant c)->double {return a * (double)c; };
 
     auto minus_double = [](double a, double b)->double {return a - b; };
-    auto add_double = [](double a, double b)->double {return a + b; };
-    auto mult_double = [](double a, double b)->double {return a * b; };
-    auto div_double = [](double a, double b)->double {return a / b; };
-    auto max_double = [](double a, double b)->double {return std::max(a, b); };
-    auto ln_double = [](double a)->double {return std::log(a); };
-    auto exp_double = [](double a)->double {return std::exp(a); };
+    auto add_double   = [](double a, double b)->double {return a + b; };
+    auto mult_double  = [](double a, double b)->double {return a * b; };
+    auto div_double   = [](double a, double b)->double {return a / b; };
+    auto max_double   = [](double a, double b)->double {return std::max(a, b); };
+    auto ln_double    = [](double a)->double {return std::log(a); };
+    auto exp_double   = [](double a)->double {return std::exp(a); };
+    auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
 
-    // Convolution
-    // Mul by const.
+    // Convolution (3x3) :
+    // - Tableaux de data (2D, cf exemples dans MNIST)
+    // - changer dans main (sobelMagn), elle prend un tableau de 3x3
+    // - dans le LE, le datasource doit être un primitive type array 2D (Cf MNIST)
+    // - ajouter un 2eme paramètre qui précise le bombre de constante pour la convolution
 
     // Add those instructions to instruction set
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(add)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(mult)));
-    //set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(div)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(div)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(max)));
-    set.add(*(new Instructions::LambdaInstruction<uint8_t>(exp)));
-    set.add(*(new Instructions::LambdaInstruction<uint8_t>(ln)));
+    set.add(*(new Instructions::LambdaInstruction<uint8_t, Data::Constant>(multByConst)));
 
     set.add(*(new Instructions::LambdaInstruction<double, double>(minus_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(add_double)));
@@ -83,13 +85,14 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<double, double>(max_double)));
     set.add(*(new Instructions::LambdaInstruction<double>(exp_double)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln_double)));
+    set.add(*(new Instructions::LambdaInstruction<double, Data::Constant>(multByConst_double)));
 
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t maxNbActionsPerEval = 10*params.maxNbActionsPerEval;                          // 10 000
+    uint64_t maxNbActionsPerEval = 10*params.maxNbActionsPerEval;                       // 10 000
     uint64_t nbGeneTargetChange = 30;                                                   // 30
     uint64_t nbValidationTarget = 1000;                                                 // 1000
 
@@ -100,10 +103,10 @@ int main()
     std::cout << "Parameters : "<< std::endl;
     std::cout << "  - NB Training Targets = " << maxNbActionsPerEval << std::endl;
     std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
-    std::cout << "  - NB Generation Before Targets Change = " << nbGeneTargetChange << std::endl;
+    std::cout << "  - NB Generation Change = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
 
-    Environment env(set, LE->getDataSources(), 8); // Nb de registres dans les programmes
+    Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant); // Nb de registres dans les programmes
 
     // Instantiate the TPGGraph that we will load
     //auto tpg = TPG::TPGGraph(env);
@@ -116,6 +119,10 @@ int main()
     Learn::ClassificationLearningAgent la(*LE, set, params);
     //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la.init();
+
+    // Printing every parameters in a .json file
+    File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/paramsJson.json", params);
+    // "D:/dev/InnovR/TpgVvcPartDatabase/paramsJson.json" || "/home/cleonard/dev/TpgVvcPartDatabase/paramsJson.json"
 
     // Init the best Policy
     //const TPG::TPGVertex* bestRoot = NULL; // unused ?
@@ -149,7 +156,7 @@ int main()
     // Main training Loop
 
     std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
-
+    // "D:/dev/InnovR/TpgVvcPartDatabase/fileClassificationTableName.txt" || "/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt"
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
         // Each ${nbGeneTargetChange} generation, we generate new random training targets so that different targets are used.

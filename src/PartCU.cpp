@@ -80,7 +80,7 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
     char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/";
-    // "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/" || "/home/cleonard/Data/dataset_tpg_32x32_27/"
+    // "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/" || "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/"
     char bin_extension[10] = ".bin";
     std::strcat(current_CU_path, next_CU_number_string);
     std::strcat(current_CU_path, bin_extension);
@@ -97,7 +97,7 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
 
     // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
     uint8_t contents[32*32+1];
-    int nbCharRead = std::fread(&contents[0], 1, 32*32+1, input);
+    size_t nbCharRead = std::fread(&contents[0], 1, 32*32+1, input);
     if (nbCharRead != 32*32+1)
         std::perror("File Read failed");
     // Dunno why it fails
@@ -165,7 +165,7 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
     for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
     {
         // Get answer
-        uint8_t optimalActionID = this->currentClass;
+        uint64_t optimalActionID = this->currentClass;
         nbPerClass[optimalActionID]++;
 
         // Execute
@@ -201,14 +201,14 @@ void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex
             fichier << x;
             for(int y = 0; y < nbClasses; y++)
             {
-                int nb = classifTable[x][y]; //this->classificationTable.at(x).at(y);
+                uint64_t nb = classifTable[x][y]; //this->classificationTable.at(x).at(y);
 
                 int nbChar = (int) (1 + (nb == 0 ? 0 : log10(nb)));
                 for(int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
                     fichier << " ";
                 fichier << nb << (x == y ? "-" : " ");
             }
-            int nb = nbPerClass[x];
+            uint64_t nb = nbPerClass[x];
             int nbChar = (int)(1 + (nb == 0 ? 0 : log10(nb)));
             for (int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
                 fichier << " ";
