@@ -63,12 +63,24 @@ int main()
     auto ln_double    = [](double a)->double {return std::log(a); };
     auto exp_double   = [](double a)->double {return std::exp(a); };
     auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
+    auto conv2D_double = [](const Data::Constant coeff[9], const uint8_t data[3][3])->double {
+        double res = 0.0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                res += (double)coeff[i * 3 + j] * data[i][j];
+            }
+        }
+        return res;
+    };
 
     // Convolution (3x3) :
     // - Tableaux de data (2D, cf exemples dans MNIST)
     // - changer dans main (sobelMagn), elle prend un tableau de 3x3
     // - dans le LE, le datasource doit être un primitive type array 2D (Cf MNIST)
-    // - ajouter un 2eme paramètre qui précise le bombre de constante pour la convolution
+    // - ajouter un 2eme paramètre qui précise le nombre de constantes pour la convolution
+
+    // Je pense que le 'Constant[3][3]' ne fonctionnera pas, car le DataHandler qui fournit les constantes est un Array1D.
+    // Tu peux utiliser un 'Constant[9]' à la place. (Et n'oublie pas de mettre au moins 9 constantes dans param.json)
 
     // Add those instructions to instruction set
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
@@ -86,6 +98,7 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<double>(exp_double)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln_double)));
     set.add(*(new Instructions::LambdaInstruction<double, Data::Constant>(multByConst_double)));
+    set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const uint8_t[3][3]>(conv2D_double)));
 
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
@@ -176,7 +189,7 @@ int main()
             {
                 for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
                 {
-                    Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
+                    Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
                     PartCU::validationTargetsCU->push_back(target);
                 } 
             }
@@ -184,7 +197,7 @@ int main()
             // ---  Loading next targets ---
             for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
             {
-                Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
+                Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
                 PartCU::trainingTargetsCU->push_back(target);
                 // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
             }

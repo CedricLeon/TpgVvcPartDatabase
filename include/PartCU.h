@@ -31,13 +31,9 @@ private:
     *   - TTH (4) : Ternary-Tree Horizontal
     *   - TTV (5) : Ternary-Tree Vertical
     */
-    //const std::vector<uint64_t> availableActions;
+    /// const std::vector<uint64_t> availableActions;
 
-    /**
-    * \brief Learning Agent score for the current job
-    * +1 each time he chose the best split, else +0
-    */
-    //uint64_t score; // Managed by ClassificationLearningEnvironment
+    /// Score managed by ClassificationLearningEnvironment
 
     /**
     * \brief Current LearningMode of the LearningEnvironment.
@@ -51,7 +47,7 @@ private:
     * Vector containing all pixels of the current CU
     * CU are 32x32 => 1024 values
     */
-    Data::PrimitiveTypeArray<uint8_t> currentCU;
+    Data::PrimitiveTypeArray2D<uint8_t> currentCU;
 
     // ---------- Intern Variables ----------
     // Optimal split for the current CU extract from the .bin file
@@ -71,13 +67,13 @@ public:
     * \brief List of CU datas and their corresponding optimal split
     * Each of those vectors contains ${NB_TRAINING_TARGETS} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
     */
-    static std::vector<Data::PrimitiveTypeArray<uint8_t> *> *trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> *trainingTargetsOptimalSplits;
     // Index of the actual loaded CU 
     uint64_t actualTrainingCU;
     // ****** VALIDATION Arguments ******
     const uint64_t NB_VALIDATION_TARGETS;       // default 1 000
-    static std::vector<Data::PrimitiveTypeArray<uint8_t>*> *validationTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
+    static std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *validationTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> *validationTargetsOptimalSplits;
     uint64_t actualValidationCU;
 
@@ -88,7 +84,7 @@ public:
               //availableActions(actions),
               //score(0),
               currentMode(Learn::LearningMode::TRAINING),
-              currentCU(32 * 32),
+              currentCU(32, 32),    // 2D Array
               //optimal_split(6),   // Unexisting split
               NB_TRAINING_TARGETS(nbActionsPerEval),
               NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
@@ -96,7 +92,7 @@ public:
               NB_VALIDATION_TARGETS(nbValidationTarget),
               actualValidationCU(0) {}
 
-    Data::PrimitiveTypeArray<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
+    Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
     void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile);
 
     // -------- LearningEnvironment --------
