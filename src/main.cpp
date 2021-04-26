@@ -176,7 +176,7 @@ int main()
             {
                 for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
                 {
-                    Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
+                    Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
                     PartCU::validationTargetsCU->push_back(target);
                 } 
             }
@@ -184,7 +184,7 @@ int main()
             // ---  Loading next targets ---
             for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
             {
-                Data::PrimitiveTypeArray<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
+                Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
                 PartCU::trainingTargetsCU->push_back(target);
                 // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
             }

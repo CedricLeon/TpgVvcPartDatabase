@@ -68,13 +68,13 @@ bool PartCU::isTerminal() const
 // ********************************************************************* //
 
 // ****** TRAINING Arguments ******
-std::vector<Data::PrimitiveTypeArray<uint8_t> *> *PartCU::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray<uint8_t>*>; // Array2DWrapper
+std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *PartCU::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>; // Array2DWrapper
 std::vector<uint8_t> *PartCU::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
 // ****** VALIDATION Arguments ******
-std::vector<Data::PrimitiveTypeArray<uint8_t>*> *PartCU::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray<uint8_t>*>;  // Array2DWrapper
+std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *PartCU::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;  // Array2DWrapper
 std::vector<uint8_t> *PartCU::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::LearningMode mode) {
+Data::PrimitiveTypeArray2D<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::LearningMode mode) {
     // ------------------ Opening and Reading a random CU file ------------------
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
@@ -106,7 +106,7 @@ Data::PrimitiveTypeArray<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::Le
     std::fclose(input);
 
     // Creating a new PrimitiveTypeArray<uint8_t> and filling it
-    auto *randomCU = new Data::PrimitiveTypeArray<uint8_t>(32 * 32);
+    auto *randomCU = new Data::PrimitiveTypeArray2D<uint8_t>(32, 32);   // 2D Array
     for (uint32_t pxlIndex = 0; pxlIndex < 32 * 32; pxlIndex++)
         randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
 
