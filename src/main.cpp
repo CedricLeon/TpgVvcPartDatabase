@@ -63,7 +63,7 @@ int main()
     auto ln_double    = [](double a)->double {return std::log(a); };
     auto exp_double   = [](double a)->double {return std::exp(a); };
     auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
-    auto conv2D_double = [](const Data::Constant coeff[9], const double data[3][3])->double {
+    auto conv2D_double = [](const Data::Constant coeff[9], const uint8_t data[3][3])->double {
         double res = 0.0;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -98,7 +98,7 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<double>(exp_double)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln_double)));
     set.add(*(new Instructions::LambdaInstruction<double, Data::Constant>(multByConst_double)));
-    set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const double[3][3]>(conv2D_double)));
+    set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const uint8_t[3][3]>(conv2D_double)));
 
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
