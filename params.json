@@ -6,7 +6,7 @@
 	"ratioDeletedRoots": 0.90,
 	"maxNbEvaluationPerPolicy": 10,
 	"doValidation": true,
-	"nbProgramConstant": 3,
+	"nbProgramConstant": 9,
 
 	"mutation": {
 		"tpg": {
