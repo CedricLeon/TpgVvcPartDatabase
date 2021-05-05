@@ -139,6 +139,81 @@ void PartCU::LoadNextCU() {
     }
 }
 
+void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile)
+{
+    // Print table of classification of the best
+    TPG::TPGExecutionEngine tee(env, nullptr);
+
+    // Change the MODE
+    this->reset(0, Learn::LearningMode::VALIDATION);    // TESTING in MNIST, mais marche pas ici
+
+    // Fill the table
+    const int nbClasses = 6;
+
+    uint64_t classifTable[nbClasses][nbClasses] = { 0 };
+    uint64_t nbPerClass[nbClasses] = { 0 };
+    uint8_t actionID = -1;
+
+    for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
+    {
+        // Get answer
+        uint64_t optimalActionID = this->optimal_split;
+        nbPerClass[optimalActionID]++;
+
+        // Execute
+        auto path = tee.executeFromRoot(*bestRoot);
+        const TPG::TPGAction* action = (const TPG::TPGAction*)path.at(path.size() - 1);
+        actionID = (uint8_t)action->getActionID();
+
+        // Increment table
+        classifTable[optimalActionID][actionID]++;
+
+        // Do action (to trigger image update)
+        this->LoadNextCU();
+    }
+
+    // Reset the learning mode to TESTING
+    this->reset(0, Learn::LearningMode::TESTING);
+
+    // Computing Score :
+    uint64_t score = 0;
+    for (int i = 0; i < nbClasses; i++)
+        score += classifTable[i][i];
+
+    // Print the table
+    std::ofstream fichier(outputFile.c_str(), std::ios::app);
+    if (fichier)
+    {
+        fichier << "-------------------------------------------------" << std::endl;
+        fichier << "Gen : " << numGen << "   | Score  : " << score << std::endl;
+        fichier << "     NP     QT    BTH    BTV    TTH    TTV    Nb" << std::endl;
+
+        for (int x = 0; x < nbClasses; x++)
+        {
+            fichier << x;
+            for (int y = 0; y < nbClasses; y++)
+            {
+                uint64_t nb = classifTable[x][y]; //this->classificationTable.at(x).at(y);
+
+                int nbChar = (int)(1 + (nb == 0 ? 0 : log10(nb)));
+                for (int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
+                    fichier << " ";
+                fichier << nb << (x == y ? "-" : " ");
+            }
+            uint64_t nb = nbPerClass[x];
+            int nbChar = (int)(1 + (nb == 0 ? 0 : log10(nb)));
+            for (int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
+                fichier << " ";
+            fichier << nb << std::endl;
+        }
+        fichier.close();
+    }
+    else
+    {
+        std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+    }
+}
+
 /***********************************************************************
     Ce TPG prendra en entrée un CU de 32x32 et fournira en sortie une action, un choix de split.
     La reward sera calculée à partir du RDO-Cost mais inversé (Plus le RDO-Cost est petit mieux c'est, mais le TPG essaie de maximiser par défaut donc getScore() rendra un truc type 1/RDO-Cost : à détailler)

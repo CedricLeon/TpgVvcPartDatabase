@@ -101,14 +101,14 @@ int main()
 
     Environment env(set, LE->getDataSources(), 8);
     // Instantiate the TPGGraph that we will load
-    auto tpg = TPG::TPGGraph(env);
+    //auto tpg = TPG::TPGGraph(env);
     // Create an importer for the best graph and imports it
-    std::cout << "Import graph" << std::endl;
-    File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0077.dot", env, tpg);
-    dotImporter.importGraph();
+    //std::cout << "Import graph" << std::endl;
+    //File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0077.dot", env, tpg);
+    //dotImporter.importGraph();
 
     // takes the first root of the graph, anyway out_best has only 1 root (the best)
-    auto root = tpg.getRootVertices().front();
+    //auto root = tpg.getRootVertices().front();
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
     Learn::ParallelLearningAgent *la = new Learn::ParallelLearningAgent(*LE, set, params);
@@ -141,6 +141,10 @@ int main()
     std::ofstream stats;                                                // Warning : stats is uninitialized
     stats.open("bestPolicyStats.md");
     Log::LAPolicyStatsLogger policyStatsLogger(*la, stats);
+
+    std::string const fileClassificationTableName("D:/dev/InnovR/TpgVvcPartDatabase/fileClassificationTableName.txt");
+    // "D:/dev/InnovR/TpgVvcPartDatabase/fileClassificationTableName.txt" || "/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt"
+
 
     // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
     // For Validation, 1 000 CUs are loaded and used forever
@@ -177,6 +181,13 @@ int main()
                 // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
             }
         }
+
+        /**************************** Printing Classification Table using ugly loop *********************************/
+        const TPG::TPGVertex* bestRoot = la->getBestRoot().first;
+        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
+
+        /**************************** Trying To print Classification Table using getClassificationTable() *********************************/
+
 
         char buff[13];
         sprintf(buff, "out_%04d.dot", i);

@@ -104,6 +104,7 @@ public:
     std::vector<std::reference_wrapper<const Data::DataHandler>> getDataSources();
     double getScore() const;
     bool isTerminal() const;
+    void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile);
 };
 
 #endif //INC_2048_GAME2048_H
