@@ -59,19 +59,37 @@ endif()
 # ************ PROJECT CONFIG ***************
 # *******************************************
 
-include_directories(${GEGELATI_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}
-               ../src/main.cpp
-               ../src/PartCU.cpp
-               ../include/PartCU.h
-               ../params.json
-)
-
 # Add definitions for testing purposes (-DTESTING=1)
 if(${TESTING})
     MESSAGE("Testing mode")
     add_definitions(-DNO_CONSOLE_CONTROL=1)
 endif()
 
-target_link_libraries(${PROJECT_NAME} ${GEGELATI_LIBRARIES})
-target_compile_definitions(${PROJECT_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+# Include GEGELATI
+include_directories(${GEGELATI_INCLUDE_DIRS})
+
+# ************ DEFAULT SOLUTION ***************
+# Create default executable (from the classification environment, Cf. 4EIIS8)
+set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classifEnv)
+add_executable(${DEFAULT_EXE_NAME}
+               ../src/main.cpp
+               ../src/PartCU.cpp
+               ../include/PartCU.h
+               ../params.json
+)
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${DEFAULT_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${DEFAULT_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
+# ************ BINARY TPGs SOLUTION ***************
+# Create a second executable for the 7 binary TPGs solution (from the default environment, Cf. stage)
+set(BINARYTPG_EXE_NAME ${PROJECT_NAME}_binary)
+add_executable(${BINARYTPG_EXE_NAME}
+        ../src/binaryTPGs.cpp
+        ../src/PartCU.cpp
+        ../include/PartCU.h
+        ../params.json
+)
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${BINARYTPG_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${BINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
