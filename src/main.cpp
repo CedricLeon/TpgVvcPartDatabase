@@ -134,7 +134,7 @@ int main()
     la.init();
 
     // Printing every parameters in a .json file
-    File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/paramsJson.json", params);
+    File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json", params);
     // "D:/dev/InnovR/TpgVvcPartDatabase/paramsJson.json" || "/home/cleonard/dev/TpgVvcPartDatabase/paramsJson.json"
 
     // Init the best Policy
