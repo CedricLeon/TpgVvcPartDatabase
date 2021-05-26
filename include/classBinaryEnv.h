@@ -1,5 +1,5 @@
-#ifndef TPGVVCPARTDATABASE_DEFAULTBINARYENV_H
-#define TPGVVCPARTDATABASE_DEFAULTBINARYENV_H
+#ifndef TPGVVCPARTDATABASE_CLASSBINARYENV_H
+#define TPGVVCPARTDATABASE_CLASSBINARYENV_H
 
 #include <iostream>
 #include <cstdlib>
@@ -11,7 +11,7 @@
 * \brief Heritage of the LearningEnvironment Interface
 * This class defines the environment for a binary TPG interacting with a database
 */
-class BinaryDefaultEnv : public Learn::LearningEnvironment {
+class BinaryClassifEnv : public Learn::ClassificationLearningEnvironment {
 
 private:
     /**
@@ -34,7 +34,7 @@ private:
     *   - If the optimal split to be chosen is not BTV the agent should pick (0)
     *   - If the optimal split is actually BTV the agent should pick (1)
     */
-    const std::vector<uint64_t> availableActions;
+    //const std::vector<uint64_t> availableActions;
 
     /**
     * \brief Index of the action which the TPG is specialized in
@@ -44,7 +44,7 @@ private:
     /**
     * \brief Score for the current job (+1 when best split is chosen, else +0)
     */
-    double score;
+    //double score;
 
     /**
     * \brief Current LearningMode of the LearningEnvironment.
@@ -63,7 +63,7 @@ private:
     /**
     * \brief Optimal split for the current CU extract from the .bin file
     */
-    uint8_t optimal_split;
+    //uint8_t optimal_split; // Now : this->currentClass
 
     /**
      * \brief Load the next preloaded CU either for training or for validation (depending on the currentMode)
@@ -86,10 +86,6 @@ public:
      * (In order to accelerate the Learning we preload targets (CUs) which are used for X generations)
      */
     const uint64_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
-    /**
-    * \brief Number of VALIDATION target
-    */
-    const uint64_t NB_VALIDATION_TARGETS;
 
 
     // ---------- TRAINING Arguments ----------
@@ -109,6 +105,10 @@ public:
     uint64_t actualTrainingCU;
 
     // ---------- VALIDATION Arguments ----------
+    /**
+    * \brief Number of VALIDATION target
+    */
+    const uint64_t NB_VALIDATION_TARGETS;
     /**
     * \brief Vector of validation CU datas
     * This vector contains ${NB_VALIDATION_TARGETS} elements and is loaded once at training beginning
@@ -134,20 +134,17 @@ public:
     * \param[in] nbValidationTarget number of validation targets
     * \param[in] seed for randomness control
     */
-    BinaryDefaultEnv(std::vector<uint64_t> actions, uint64_t speAct, const uint64_t nbTrainingElements, const uint64_t nbTrainingTargets, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
-            : LearningEnvironment(NB_ACTIONS),
+    BinaryClassifEnv(std::vector<uint64_t> actions, uint64_t speAct, const uint64_t nbTrainingElements, const uint64_t nbTrainingTargets, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
+            : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
-              availableActions(actions),
               specializedAction(speAct),
-              score(0.0),
               currentMode(Learn::LearningMode::TRAINING),
               currentCU(32, 32),    // 2D Array
-              optimal_split(6),           // Unexisting split
               NB_TRAINING_ELEMENTS(nbTrainingElements),
               NB_TRAINING_TARGETS(nbTrainingTargets),
               NB_GENERATION_BEFORE_TARGETS_CHANGE(nbGeneTargetChange),
-              NB_VALIDATION_TARGETS(nbValidationTarget),
               actualTrainingCU(0),
+              NB_VALIDATION_TARGETS(nbValidationTarget),
               actualValidationCU(0) {}
 
     /**
@@ -256,4 +253,4 @@ public:
     bool isTerminal() const;
 };
 
-#endif //TPGVVCPARTDATABASE_DEFAULTBINARYENV_H
+#endif //TPGVVCPARTDATABASE_CLASSBINARYENV_H

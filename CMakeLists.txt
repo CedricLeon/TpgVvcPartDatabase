@@ -68,7 +68,7 @@ endif()
 # Include GEGELATI
 include_directories(${GEGELATI_INCLUDE_DIRS})
 
-# ************ DEFAULT SOLUTION ***************
+# ************ DEFAULT SOLUTION (F1) ***************
 # Create default executable (from the classification environment, Cf. 4EIIS8)
 set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classifEnv)
 add_executable(${DEFAULT_EXE_NAME}
@@ -88,8 +88,8 @@ add_executable(${BINARYTPG_EXE_NAME}
         ../src/binaryTPGs.cpp
         ../src/defaultBinaryEnv.cpp
         ../include/defaultBinaryEnv.h
-        ../src/PartCU.cpp
-        ../include/PartCU.h
+        ../src/classBinaryEnv.cpp
+        ../include/classBinaryEnv.h
         ../params.json
 )
 # Add GEGELATI and CMAKE_SOURCE_DIR

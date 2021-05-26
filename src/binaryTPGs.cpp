@@ -8,6 +8,7 @@
 #include <gegelati.h>
 
 #include "../include/defaultBinaryEnv.h"
+#include "../include/classBinaryEnv.h"
 
 #ifndef NB_GENERATIONS
 #define NB_GENERATIONS 2000
@@ -105,16 +106,26 @@ int main()
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising number of preloaded CUs
-    uint64_t maxNbActionsPerEval = 10*params.maxNbActionsPerEval;                       // 10 000
+    uint64_t nbTrainingElements = 110000;
+    // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
+    // Balanced database with full classes : 329999
+    // Unbalanced database : 1136424
+    uint64_t nbTrainingTargets = 10*params.maxNbActionsPerEval;                         // 10 000
     uint64_t nbGeneTargetChange = 30;                                                   // 30
     uint64_t nbValidationTarget = 1000;                                                 // 1000
 
+    // Initialising paths
+    const char databasePath[100] = "/home/cleonard/Data/binary_datasets/NP_dataset/";
+    // /home/cleonard/Data/binary_datasets/NP_dataset/ || /home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/
+    const char parametersPrintPath[100] = "/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json";
+    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
+
     // Instantiate the LearningEnvironment
-    auto *LE = new BinaryEnv({0, 1}, 0, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
+    auto *LE = new BinaryClassifEnv({0, 1}, 1, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 2021);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Parameters : "<< std::endl;
-    std::cout << "  - NB Training Targets   = " << maxNbActionsPerEval << std::endl;
+    std::cout << "  - NB Training Targets   = " << nbTrainingTargets << std::endl;
     std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
     std::cout << "  - NB Generation Change  = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots   = " << params.ratioDeletedRoots << std::endl;
@@ -127,7 +138,7 @@ int main()
     la.init();
 
     // Printing every parameters in a .json file
-    File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json", params);
+    File::ParametersParser::writeParametersToJson(parametersPrintPath, params);
 
 
     // ******************* CONSOLE CONTROL *******************
@@ -161,39 +172,10 @@ int main()
     // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
     // For Validation, 1 000 CUs are loaded and used forever
 
-    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName2.txt");
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
-        // Each ${nbGeneTargetChange} generation, generate new random training targets so that different targets are used
-        if (i % nbGeneTargetChange == 0)
-        {
-            // ---  Deleting old targets ---
-            if (i != 0) // Don't clear trainingTargets before initializing them
-            {
-                LE->reset(i);
-                for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
-                    delete BinaryEnv::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
-                BinaryEnv::trainingTargetsCU->clear();
-                BinaryEnv::trainingTargetsOptimalSplits->clear();
-                LE->actualTrainingCU = 0;
-            }
-            else        // Load VALIDATION Targets at the beginning of the training (i == 0)
-            {
-                for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
-                {
-                    Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
-                    BinaryEnv::validationTargetsCU->push_back(target);
-                }
-            }
-
-            // ---  Loading next targets ---
-            for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
-            {
-                Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
-                BinaryEnv::trainingTargetsCU->push_back(target);
-                // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
-            }
-        }
+        // Update Training and Validation targets depending on the generation
+        LE->UpdatingTargets(i, databasePath);
 
         // Save best generation policy
         char buff[13];
@@ -204,7 +186,7 @@ int main()
         // Train
         la.trainOneGeneration(i);
 
-        // print Classification Table
+        // Print Classification Table
         const TPG::TPGVertex* bestRoot = la.getBestRoot().first;
         LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
     }
