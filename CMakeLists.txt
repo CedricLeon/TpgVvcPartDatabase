@@ -86,6 +86,8 @@ target_compile_definitions(${DEFAULT_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_
 set(BINARYTPG_EXE_NAME ${PROJECT_NAME}_binary)
 add_executable(${BINARYTPG_EXE_NAME}
         ../src/binaryTPGs.cpp
+        ../src/defaultBinaryEnv.cpp
+        ../include/defaultBinaryEnv.h
         ../src/PartCU.cpp
         ../include/PartCU.h
         ../params.json
