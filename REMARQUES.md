@@ -82,7 +82,7 @@ sudo cmake --build . --target install -- -j
 ````bash
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DTESTING=1
-cmake --build .
+cmake --build . -- -j 38
 nohup ./nom_de_lexec > logs.txt &
 // Pour voir ou il en est
 tail -f logs.txt

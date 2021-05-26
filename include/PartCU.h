@@ -1,10 +1,10 @@
-#ifndef INC_2048_GAME2048_H
-#define INC_2048_GAME2048_H
+#ifndef TPGVVCPARTDATABASE_PARTCU_H
+#define TPGVVCPARTDATABASE_PARTCU_H
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include<fstream>
+#include <fstream>
 
 #include <gegelati.h>
 // #include <array2DWrapper.h>
@@ -105,4 +105,4 @@ public:
     bool isTerminal() const;
 };
 
-#endif //INC_2048_GAME2048_H
+#endif //TPGVVCPARTDATABASE_PARTCU_H
