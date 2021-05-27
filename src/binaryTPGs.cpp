@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <cmath>
 #include <thread>
 #include <atomic>
@@ -13,9 +12,9 @@
 #ifndef NB_GENERATIONS
 #define NB_GENERATIONS 2000
 #endif
+
 /**
  * \brief Manage training run : press 'q' or 'Q' to stop the training
- *
  * \param[exit] used by the threadKeyboard (set to false by other thread)
  */
 void getKey(std::atomic<bool>& exit)
@@ -48,10 +47,11 @@ int main()
 {
     std::cout << "Start VVC Partitionning Optimization with binary TPGs solution." << std::endl;
 
-    // ******************* INSTRUCTIONS *******************
+    // ************************************************** INSTRUCTIONS *************************************************
 
     // Create the instruction set for programs
     Instructions::Set set;
+
     // uint8_t instructions (for pixels values)
     auto minus = [](uint8_t a, uint8_t b)->double {return a - b; };
     auto add   = [](uint8_t a, uint8_t b)->double {return a + b; };
@@ -99,49 +99,60 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const uint8_t[3][3]>(conv2D_double)));
 
 
-    // ******************* PARAMETERS AND ENVIRONMENT *******************
+    // ******************************************* PARAMETERS AND ENVIRONMENT ******************************************
 
+    // ---------------- Loading and initializing parameters ----------------
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
-    // Initialising number of preloaded CUs
-    uint64_t nbTrainingElements = 110000;
-    // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
-    // Balanced database with full classes : 329999
-    // Unbalanced database : 1136424
-    uint64_t nbTrainingTargets = 10*params.maxNbActionsPerEval;                         // 10 000
-    uint64_t nbGeneTargetChange = 30;                                                   // 30
-    uint64_t nbValidationTarget = 1000;                                                 // 1000
+    // Initialising the number of CUs used
+    uint64_t nbTrainingElements = 110000;   // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
+                                            // Balanced database with full classes : 329999
+                                            // Unbalanced database : 1136424
+    // Number of CUs preload changed every nbGeneTargetChange generation for training and load only once for validation
+    uint64_t nbTrainingTargets  = 10000;
+    uint64_t nbGeneTargetChange = 30;
+    uint64_t nbValidationTarget = 1000;
 
-    // Initialising paths
-    const char databasePath[100] = "/home/cleonard/Data/binary_datasets/NP_dataset/";
-    // /home/cleonard/Data/binary_datasets/NP_dataset/ || /home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/
-    const char parametersPrintPath[100] = "/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json";
+    // The action the binary TPG will be specialized in (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
+    uint64_t speAct = 5;
+
+    // ---------------- Instantiate Environment and Agent ----------------
+    // LearningEnvironment
+    auto *LE = new BinaryClassifEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    // Creating a second environment used to compute the classification table
+    Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
+
+    // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
+    Learn::ParallelLearningAgent la(*LE, set, params);
+    la.init();
+
+    // ---------------- Initialising paths ----------------
+    // /home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/
+    // /home/cleonard/Data/binary_datasets/BTH_dataset/
+    char datasetPath[100] = "/home/cleonard/Data/binary_datasets/";
+    std::string speActionName = LE->getActionName(speAct);
+    std::strcat(datasetPath, speActionName.c_str());
+    char dataset_extension[10] = "_dataset/";
+    std::strcat(datasetPath, dataset_extension);
+
+    //const char parametersPrintPath[100] = "/home/cleonard/dev/TpgVvcPartDatabase/build/jsonParams.json";
     std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
 
-    // Instantiate the LearningEnvironment
-    auto *LE = new BinaryClassifEnv({0, 1}, 1, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 2021);
-
+    // ---------------- Printing training overview  ----------------
+    std::cout << "This binary TPG is specialized in the " << speActionName << " split" << std::endl << std::endl;
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
-    std::cout << "Parameters : "<< std::endl;
+    std::cout << "Parameters: "<< std::endl;
     std::cout << "  - NB Training Targets   = " << nbTrainingTargets << std::endl;
     std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
     std::cout << "  - NB Generation Change  = " << nbGeneTargetChange << std::endl;
     std::cout << "  - Ratio Deleted Roots   = " << params.ratioDeletedRoots << std::endl;
 
-    Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
-
-    // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    Learn::ParallelLearningAgent la(*LE, set, params);
-    //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
-    la.init();
-
     // Printing every parameters in a .json file
-    File::ParametersParser::writeParametersToJson(parametersPrintPath, params);
+    //File::ParametersParser::writeParametersToJson(parametersPrintPath, params);
 
-
-    // ******************* CONSOLE CONTROL *******************
+    // ************************************************ CONSOLE CONTROL ************************************************
 
     // Start a thread to control the loop
 #ifndef NO_CONSOLE_CONTROL
@@ -152,8 +163,7 @@ int main()
     std::atomic<bool> exitProgram = false;
 #endif
 
-
-    // ******************* LOGS MANAGEMENT *******************
+    // ************************************************ LOGS MANAGEMENT ************************************************
 
     // Create a basic logger
     Log::LABasicLogger basicLogger(la);
@@ -162,20 +172,20 @@ int main()
     File::TPGGraphDotExporter dotExporter("out_0000.dot", la.getTPGGraph());
 
     // Logging best policy stat.
-    std::ofstream stats;                                                // Warning : stats is uninitialized
+    std::ofstream stats;
     stats.open("bestPolicyStats.md");
     Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
 
 
-    // ******************* TRAINING LOOP *******************
+    // *********************************************** MAIN TRAINING LOOP **********************************************
 
-    // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
+    // Used as it is, we load 10 000 CUs and we use them for every roots during 30 generations
     // For Validation, 1 000 CUs are loaded and used forever
 
     for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
     {
         // Update Training and Validation targets depending on the generation
-        LE->UpdatingTargets(i, databasePath);
+        LE->UpdatingTargets(i, datasetPath);
 
         // Save best generation policy
         char buff[13];
@@ -191,6 +201,7 @@ int main()
         LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
     }
 
+    // ************************************************** TRAINING END *************************************************
     // After training, keep the best policy
     la.keepBestPolicy();
     dotExporter.setNewFilePath("out_best.dot");
@@ -218,4 +229,3 @@ int main()
 
     return 0;
 }
-

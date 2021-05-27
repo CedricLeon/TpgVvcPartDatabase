@@ -158,7 +158,7 @@ void BinaryClassifEnv::LoadNextCU()
         // Updating next split solution :
         //   -  If the optimal split is not the specialized action, the optimal split is set to 0
         //   -  Else the optimal split is set to 1
-        this->currentClass = BinaryClassifEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU) != this->specializedAction ? 0 : 1;
+        this->currentClass = (BinaryClassifEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU) != this->specializedAction) ? 0 : 1;
         this->actualTrainingCU++;
 
         // Looping on the beginning of training targets
@@ -172,7 +172,7 @@ void BinaryClassifEnv::LoadNextCU()
         // Updating next split solution :
         //   -  If the optimal split is not the specialized action, the optimal split is set to 0
         //   -  Else the optimal split is set to 1
-        this->currentClass = BinaryClassifEnv::validationTargetsOptimalSplits->at(this->actualValidationCU) != this->specializedAction ? 0 : 1;
+        this->currentClass = (BinaryClassifEnv::validationTargetsOptimalSplits->at(this->actualValidationCU) != this->specializedAction) ? 0 : 1;
         this->actualValidationCU++;
 
         // Looping on the beginning of validation targets
@@ -192,7 +192,7 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
     // Fill the table
     const int nbClasses = 2;
 
-    uint64_t classifTable[nbClasses][nbClasses] = { 0 };
+    uint64_t classifTable[nbClasses][nbClasses] = { {0} };
     uint64_t nbPerClass[nbClasses] = { 0 };
     uint8_t actionID;
 
@@ -201,6 +201,8 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
         // Get answer
         uint64_t optimalActionID = this->currentClass;
         nbPerClass[optimalActionID]++;
+
+        // std::cout << optimalActionID << " : " << nbPerClass[optimalActionID] << std::endl;
 
         // Execute
         auto path = tee.executeFromRoot(*bestRoot);
@@ -227,38 +229,16 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
     scoreMax += (double) nbPerClass[1];
 
     // What is the specialized action ?
-    std::string speActionName("???");
-    switch(this->specializedAction)
-    {
-        case 0 :
-            speActionName = "NP ";
-            break;
-        case 1 :
-            speActionName = "QT ";
-            break;
-        case 2 :
-            speActionName = "BTH";
-            break;
-        case 3 :
-            speActionName = "BTV";
-            break;
-        case 4 :
-            speActionName = "TTH";
-            break;
-        case 5 :
-            speActionName = "TTV";
-            break;
-        default:
-            speActionName = "WTF";
-            break;
-    }
+    std::string speActionName = this->getActionName(this->specializedAction);
+    if(this->specializedAction <= 1)
+        speActionName += " ";
 
     // Print the table
     std::ofstream file(outputFile.c_str(), std::ios::app);
     if(file)
     {
         file << "-------------------------------------------------" << std::endl;
-        file << "Gen: " << numGen << "   | Score: " << std::setprecision(4) << validationScore/scoreMax*100 << "  (" << validationScore << "/" << scoreMax << ")" << std::endl;
+        file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore/scoreMax*100 << "  (" << validationScore << "/" << scoreMax << ")" << std::endl;
         file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
 
         for(int x = 0; x < nbClasses; x++)
@@ -292,3 +272,32 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
     }
 }
 
+std::string BinaryClassifEnv::getActionName(uint64_t speAct)
+{
+    std::string speActionName("???");
+    switch(speAct)
+    {
+        case 0 :
+            speActionName = "NP";
+            break;
+        case 1 :
+            speActionName = "QT";
+            break;
+        case 2 :
+            speActionName = "BTH";
+            break;
+        case 3 :
+            speActionName = "BTV";
+            break;
+        case 4 :
+            speActionName = "TTH";
+            break;
+        case 5 :
+            speActionName = "TTV";
+            break;
+        default:
+            speActionName = "WTF";
+            break;
+    }
+    return speActionName;
+}

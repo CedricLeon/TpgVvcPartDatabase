@@ -268,7 +268,7 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
     if(file)
     {
         file << "-------------------------------------------------" << std::endl;
-        file << "Gen: " << numGen << "   | Score: " << std::setprecision(4) << validationScore/scoreMax*100 << "  (" << validationScore << "/" << scoreMax << ")" << std::endl;
+        file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore/scoreMax*100 << "  (" << validationScore << "/" << scoreMax << ")" << std::endl;
         file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
 
         for(int x = 0; x < nbClasses; x++)

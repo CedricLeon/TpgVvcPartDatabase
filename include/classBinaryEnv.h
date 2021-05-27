@@ -25,26 +25,9 @@ private:
     Mutator::RNG rng;
 
     /**
-    * \brief Available actions for the LearningAgent.
-    * 2 different actions :
-    *   - (0) : Every other split than the specialized one
-    *   - (1) : The specialized action
-     *
-    * Example : The trained agent will be specialized on the BTV (default : N°3) split then :
-    *   - If the optimal split to be chosen is not BTV the agent should pick (0)
-    *   - If the optimal split is actually BTV the agent should pick (1)
-    */
-    //const std::vector<uint64_t> availableActions;
-
-    /**
     * \brief Index of the action which the TPG is specialized in
     */
     const uint64_t specializedAction;
-
-    /**
-    * \brief Score for the current job (+1 when best split is chosen, else +0)
-    */
-    //double score;
 
     /**
     * \brief Current LearningMode of the LearningEnvironment.
@@ -59,11 +42,6 @@ private:
     * CU are 32x32 => 1024 values
     */
     Data::PrimitiveTypeArray2D<uint8_t> currentCU;
-
-    /**
-    * \brief Optimal split for the current CU extract from the .bin file
-    */
-    //uint8_t optimal_split; // Now : this->currentClass
 
     /**
      * \brief Load the next preloaded CU either for training or for validation (depending on the currentMode)
@@ -175,6 +153,13 @@ public:
      * \param[in] outputFile the name of the destination file
      */
     void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile);
+
+    /**
+     * \brief Return a string corresponding to the name of the action :
+     * (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
+     * \param[in] speAct the number of the action
+     */
+    std::string getActionName(uint64_t speAct);
 
     // -------- LearningEnvironment --------
     /**
