@@ -3,15 +3,12 @@
 #include <thread>
 #include <atomic>
 #include <cinttypes>
+#include <cstdlib>
 
 #include <gegelati.h>
 
 #include "../include/defaultBinaryEnv.h"
 #include "../include/classBinaryEnv.h"
-
-#ifndef NB_GENERATIONS
-#define NB_GENERATIONS 2000
-#endif
 
 /**
  * \brief Manage training run : press 'q' or 'Q' to stop the training
@@ -43,8 +40,17 @@ void getKey(std::atomic<bool>& exit)
     std::cout.flush();
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    // argv[] contains :
+    //      - The number of the specific action
+/*    if(argc != 2)
+    { // We expect 1 arguments: the program name, the source path and the destination path
+        std::cerr << "Usage: " << argv[0] << " NB_ACT" << std::endl;
+        std::cerr << "NB_ACT should be (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)." << std::endl;
+        return 1;
+    }*/
+
     std::cout << "Start VVC Partitionning Optimization with binary TPGs solution." << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
@@ -116,11 +122,15 @@ int main()
     uint64_t nbValidationTarget = 1000;
 
     // The action the binary TPG will be specialized in (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
-    uint64_t speAct = 5;
+    int speAct = 5;
+    if (argc > 1)
+        speAct = atoi(argv[1]);
+    else
+        std::cout << "NB_ACT was not precised, using default value: " << speAct << std::endl;
 
     // ---------------- Instantiate Environment and Agent ----------------
     // LearningEnvironment
-    auto *LE = new BinaryClassifEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *LE = new BinaryDefaultEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
     // Creating a second environment used to compute the classification table
     Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
@@ -138,7 +148,7 @@ int main()
     std::strcat(datasetPath, dataset_extension);
 
     //const char parametersPrintPath[100] = "/home/cleonard/dev/TpgVvcPartDatabase/build/jsonParams.json";
-    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
+    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTable.txt");
 
     // ---------------- Printing training overview  ----------------
     std::cout << "This binary TPG is specialized in the " << speActionName << " split" << std::endl << std::endl;
@@ -182,14 +192,14 @@ int main()
     // Used as it is, we load 10 000 CUs and we use them for every roots during 30 generations
     // For Validation, 1 000 CUs are loaded and used forever
 
-    for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
+    for (uint64_t i = 0; i < params.nbGenerations && !exitProgram; i++)
     {
         // Update Training and Validation targets depending on the generation
         LE->UpdatingTargets(i, datasetPath);
 
         // Save best generation policy
-        char buff[13];
-        sprintf(buff, "out_%04d.dot", i);
+        char buff[20];
+        sprintf(buff, "out_%" PRIu64 ".dot", i);
         dotExporter.setNewFilePath(buff);
         dotExporter.print();
 
@@ -198,7 +208,7 @@ int main()
 
         // Print Classification Table
         const TPG::TPGVertex* bestRoot = la.getBestRoot().first;
-        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
+        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName, false);
     }
 
     // ************************************************** TRAINING END *************************************************

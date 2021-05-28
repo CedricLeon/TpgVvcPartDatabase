@@ -27,7 +27,7 @@ private:
     /**
     * \brief Index of the action which the TPG is specialized in
     */
-    const uint64_t specializedAction;
+    const int specializedAction;
 
     /**
     * \brief Current LearningMode of the LearningEnvironment.
@@ -112,7 +112,7 @@ public:
     * \param[in] nbValidationTarget number of validation targets
     * \param[in] seed for randomness control
     */
-    BinaryClassifEnv(std::vector<uint64_t> actions, uint64_t speAct, const uint64_t nbTrainingElements, const uint64_t nbTrainingTargets, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
+    BinaryClassifEnv(std::vector<uint64_t> actions, int speAct, const uint64_t nbTrainingElements, const uint64_t nbTrainingTargets, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
             : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
               specializedAction(speAct),
@@ -152,7 +152,7 @@ public:
      * \param[in] numGen generation number
      * \param[in] outputFile the name of the destination file
      */
-    void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile);
+    void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile, bool readable);
 
     /**
      * \brief Return a string corresponding to the name of the action :

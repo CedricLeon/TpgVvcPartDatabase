@@ -181,7 +181,7 @@ void BinaryClassifEnv::LoadNextCU()
     }
 }
 
-void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile)
+void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile, bool readable)
 {
     // Create a new TPGExecutionEngine from the environment
     TPG::TPGExecutionEngine tee(env, nullptr);
@@ -192,8 +192,8 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
     // Fill the table
     const int nbClasses = 2;
 
-    uint64_t classifTable[nbClasses][nbClasses] = { {0} };
-    uint64_t nbPerClass[nbClasses] = { 0 };
+    uint64_t classifTable[nbClasses][nbClasses] = {{0}};
+    uint64_t nbPerClass[nbClasses] = {0};
     uint8_t actionID;
 
     for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
@@ -206,7 +206,7 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
 
         // Execute
         auto path = tee.executeFromRoot(*bestRoot);
-        const auto* action = (const TPG::TPGAction*)path.at(path.size() - 1);
+        const auto *action = (const TPG::TPGAction *) path.at(path.size() - 1);
         actionID = (uint8_t) action->getActionID();
 
         // Increment table
@@ -221,54 +221,81 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
 
     // Computing Score
     double validationScore = 0.0;
-    validationScore += ((double) classifTable[0][0]) / 5;
+    validationScore += ((double) classifTable[0][0]);
     validationScore += (double) classifTable[1][1];
     // Computing ScoreMax :
     double scoreMax = 0.0;
-    scoreMax += ((double) nbPerClass[0]) / 5;
+    scoreMax += ((double) nbPerClass[0]);
     scoreMax += (double) nbPerClass[1];
 
     // What is the specialized action ?
     std::string speActionName = this->getActionName(this->specializedAction);
-    if(this->specializedAction <= 1)
+    if (this->specializedAction <= 1)
         speActionName += " ";
 
-    // Print the table
-    std::ofstream file(outputFile.c_str(), std::ios::app);
-    if(file)
+    // If readable confusion matrix is needed
+    if(readable)
     {
-        file << "-------------------------------------------------" << std::endl;
-        file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore/scoreMax*100 << "  (" << validationScore << "/" << scoreMax << ")" << std::endl;
-        file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
-
-        for(int x = 0; x < nbClasses; x++)
+        // Print the table
+        std::ofstream file(outputFile.c_str(), std::ios::app);
+        if (file)
         {
-            // ----------  Number of CUs ----------
-            // Print real class number
-            file << x << " ";
-            // Print number of guessed instances for each class
-            for(int y = 0; y < nbClasses; y++)
-            {
-                uint64_t nb = classifTable[x][y];
-                file << "  " << std::setw(3) << nb << " ";
-            }
-            // Print total number of class instances
-            uint64_t nb = nbPerClass[x];
-            file << std::setw(4) << nb;
+            file << "-------------------------------------------------" << std::endl;
+            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore / scoreMax * 100 << "  ("
+                 << validationScore << "/" << scoreMax << ")" << std::endl;
+            file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
 
-            // ----------  Normalized ----------
-            file << "  |  " << x;
-            for(int y = 0; y < nbClasses; y++)
+            for (int x = 0; x < nbClasses; x++)
             {
-                double nbNorm = (double)classifTable[x][y] / (double)nb * 100;
-                file << "  " << std::setw(5) << nbNorm << " ";
+                // ----------  Number of CUs ----------
+                // Print real class number
+                file << x << " ";
+                // Print number of guessed instances for each class
+                for (int y = 0; y < nbClasses; y++)
+                {
+                    uint64_t nb = classifTable[x][y];
+                    file << "  " << std::setw(3) << nb << " ";
+                }
+                // Print total number of class instances
+                uint64_t nb = nbPerClass[x];
+                file << std::setw(4) << nb;
+
+                // ----------  Normalized ----------
+                file << "  |  " << x;
+                for (int y = 0; y < nbClasses; y++)
+                {
+                    double nbNorm = (double) classifTable[x][y] / (double) nb * 100;
+                    file << "  " << std::setw(5) << nbNorm << " ";
+                }
+                file << std::setw(6) << nb << std::endl;
             }
-            file << std::setw(6) << nb << std::endl;
+            file.close();
+        } else {
+            std::cout << "Unable to open the file " << outputFile << "." << std::endl;
         }
-        file.close();
-    }else
+    }else  // If non-readable confusion matrix is asked (re-usable data)
     {
-        std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+        // Print the table
+        std::ofstream file(outputFile.c_str(), std::ios::app);
+        if (file)
+        {
+            if(numGen == 0)
+            {
+                file << speActionName << " training, maxScore = " << scoreMax << std::endl;
+                file << nbPerClass[1] << " " << speActionName << " CUs and " << nbPerClass[0] << " in OTHER class" << std::endl << std::endl;
+                file << " Gen   OTHER    " << speActionName << "    TOT" << std::endl;
+            }
+            double otherNorm = (double) classifTable[0][0] / (double) nbPerClass[0] * 100;
+            double actNorm   = (double) classifTable[1][1] / (double) nbPerClass[1] * 100;
+            file << std::setw(4) << numGen << "   ";
+            file << std::fixed << std::setprecision(2) << otherNorm << "  ";
+            file << actNorm << "  ";
+            file << validationScore / scoreMax * 100 << std::endl;
+            file.close();
+        } else
+        {
+            std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+        }
     }
 }
 
