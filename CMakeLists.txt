@@ -72,7 +72,7 @@ include_directories(${GEGELATI_INCLUDE_DIRS})
 # Create default executable (from the classification environment, Cf. 4EIIS8)
 set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classificationEnv)
 add_executable(${DEFAULT_EXE_NAME}
-               ../src/classification/main.cpp
+               ../src/classification/classifTPG.cpp
                ../src/classification/PartCU.cpp
                ../include/classification/PartCU.h
                ../params.json
