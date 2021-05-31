@@ -1,7 +1,7 @@
 #include <vector>
 #include <iomanip>
 
-#include "../include/defaultBinaryEnv.h"
+#include "../../include/binary/defaultBinaryEnv.h"
 
 // ********************************************************************* //
 // ************************** GEGELATI FUNCTIONS *********************** //

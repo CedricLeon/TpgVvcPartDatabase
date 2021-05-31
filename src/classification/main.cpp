@@ -10,7 +10,7 @@
 
 #include <gegelati.h>
 
-#include "../include/PartCU.h"
+#include "../../include/classification/PartCU.h"
 
 #ifndef NB_GENERATIONS
 #define NB_GENERATIONS 2000

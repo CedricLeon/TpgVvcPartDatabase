@@ -70,11 +70,11 @@ include_directories(${GEGELATI_INCLUDE_DIRS})
 
 # ************ DEFAULT SOLUTION (F1) ***************
 # Create default executable (from the classification environment, Cf. 4EIIS8)
-set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classifEnv)
+set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classificationEnv)
 add_executable(${DEFAULT_EXE_NAME}
-               ../src/main.cpp
-               ../src/PartCU.cpp
-               ../include/PartCU.h
+               ../src/classification/main.cpp
+               ../src/classification/PartCU.cpp
+               ../include/classification/PartCU.h
                ../params.json
 )
 # Add GEGELATI and CMAKE_SOURCE_DIR
@@ -85,11 +85,11 @@ target_compile_definitions(${DEFAULT_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_
 # Create a second executable for the 7 binary TPGs solution (from the default environment, Cf. stage)
 set(BINARYTPG_EXE_NAME ${PROJECT_NAME}_binary)
 add_executable(${BINARYTPG_EXE_NAME}
-        ../src/binaryTPGs.cpp
-        ../src/defaultBinaryEnv.cpp
-        ../include/defaultBinaryEnv.h
-        ../src/classBinaryEnv.cpp
-        ../include/classBinaryEnv.h
+        ../src/binary/binaryTPGs.cpp
+        ../src/binary/defaultBinaryEnv.cpp
+        ../include/binary/defaultBinaryEnv.h
+        ../src/binary/classBinaryEnv.cpp
+        ../include/binary/classBinaryEnv.h
         ../params.json
 )
 # Add GEGELATI and CMAKE_SOURCE_DIR
