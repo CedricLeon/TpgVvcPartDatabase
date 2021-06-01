@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
         return 1;
     }*/
 
-    std::cout << "Start VVC Partitionning Optimization with binary TPGs solution." << std::endl;
+    std::cout << "Start the training of a binary TPG" << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
 

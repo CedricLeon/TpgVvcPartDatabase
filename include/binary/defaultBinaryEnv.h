@@ -65,13 +65,8 @@ private:
     */
     uint8_t optimal_split;
 
-    /**
-     * \brief Load the next preloaded CU either for training or for validation (depending on the currentMode)
-     */
-    void LoadNextCU();
-
 public:
-    // ---------- Intern Variables ----------
+    // ********************************************* Intern Variables *********************************************
     /**
     * \brief Number of training element
     **/
@@ -91,8 +86,7 @@ public:
     */
     const uint64_t NB_VALIDATION_TARGETS;
 
-
-    // ---------- TRAINING Arguments ----------
+    // ********************************************* TRAINING Arguments *********************************************
     /**
     * \brief Vector of CU datas
     * This vector contains ${NB_TRAINING_TARGETS} elements and is updated every ${NB_GENERATION_BEFORE_TARGETS_CHANGE}
@@ -108,7 +102,7 @@ public:
     */
     uint64_t actualTrainingCU;
 
-    // ---------- VALIDATION Arguments ----------
+    // ********************************************* VALIDATION Arguments *********************************************
     /**
     * \brief Vector of validation CU datas
     * This vector contains ${NB_VALIDATION_TARGETS} elements and is loaded once at training beginning
@@ -124,6 +118,7 @@ public:
     */
     uint64_t actualValidationCU;
 
+    // ********************************************* CONSTRUCTORS *********************************************
     /**
     * \brief Default constructor for the Binary Environment.
     * \param[in] actions Every different actions for the Agent. In this binary TPG, will always be {0,1}.
@@ -150,6 +145,8 @@ public:
               actualTrainingCU(0),
               actualValidationCU(0) {}
 
+    // ********************************************* SPECIAL FUNCTIONS *********************************************
+
     /**
      * \brief Opens, reads and stores a random CU file in the database
      * CU datas are returned and the corresponding split is stored in the mode vector)
@@ -159,6 +156,11 @@ public:
      * \return a PrimitiveTypeArray2D<uint8_t>* containing loaded CU datas
      */
     Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode, const char current_CU_path[100]);
+
+    /**
+     * \brief Load the next preloaded CU either for training or for validation (depending on the currentMode)
+     */
+    void LoadNextCU();
 
     /**
      * \brief Update Training and Validation Targets depending on the generation
@@ -186,7 +188,23 @@ public:
      */
     std::string getActionName(uint64_t speAct);
 
-    // -------- LearningEnvironment --------
+    // ********************************************* GETTERS *********************************************
+    /**
+     * \brief Getter for specializedAction
+     */
+    int getSpecializedAction() const;
+    /**
+     * \brief Getter for optimalSplit
+     */
+    uint8_t getOptimalSplit() const;
+
+    // ********************************************* SETTERS *********************************************
+    /**
+     * \brief Setter for currentMode
+     */
+    void setCurrentMode(Learn::LearningMode mode);
+
+    // ********************************************* LearningEnvironment *********************************************
     /**
     * \brief Get a copy of the LearningEnvironment (Default implementation returns a null pointer)
     * \return a copy of the LearningEnvironment if it is copyable, otherwise this method returns a NULL pointer.

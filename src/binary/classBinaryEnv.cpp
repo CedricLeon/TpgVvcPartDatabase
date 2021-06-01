@@ -328,3 +328,5 @@ std::string BinaryClassifEnv::getActionName(uint64_t speAct)
     }
     return speActionName;
 }
+
+int BinaryClassifEnv::getSpecializedAction() const { return specializedAction; }

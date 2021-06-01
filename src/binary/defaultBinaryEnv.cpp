@@ -343,3 +343,8 @@ std::string BinaryDefaultEnv::getActionName(uint64_t speAct)
     }
     return speActionName;
 }
+
+int BinaryDefaultEnv::getSpecializedAction() const { return specializedAction; }
+uint8_t BinaryDefaultEnv::getOptimalSplit()  const { return optimal_split; }
+
+void BinaryDefaultEnv::setCurrentMode(Learn::LearningMode mode) { BinaryDefaultEnv::currentMode = mode; }

@@ -81,8 +81,8 @@ add_executable(${DEFAULT_EXE_NAME}
 target_link_libraries(${DEFAULT_EXE_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${DEFAULT_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
 
-# ************ BINARY TPGs SOLUTION ***************
-# Create a second executable for the 7 binary TPGs solution (from the default environment, Cf. stage)
+# ************ BINARY TPGs TRAINING SOLUTION ***************
+# Create a second executable for the training of one binary TPG (from the default environment, Cf. stage)
 set(BINARYTPG_EXE_NAME ${PROJECT_NAME}_binary)
 add_executable(${BINARYTPG_EXE_NAME}
         ../src/binary/binaryTPGs.cpp
@@ -95,3 +95,17 @@ add_executable(${BINARYTPG_EXE_NAME}
 # Add GEGELATI and CMAKE_SOURCE_DIR
 target_link_libraries(${BINARYTPG_EXE_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${BINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
+# ************ BINARY TPGs INFERENCE SOLUTION ***************
+# This executable load 6 binary TPGs (each specialized in a different action) and compute their mean score on a database
+set(INFERENCEBINARYTPG_EXE_NAME ${PROJECT_NAME}_inferenceBinary)
+add_executable(${INFERENCEBINARYTPG_EXE_NAME}
+        ../src/binary/inferenceBinaryTPGs.cpp
+        ../src/binary/defaultBinaryEnv.cpp
+        ../include/binary/defaultBinaryEnv.h
+        ../src/binary/classBinaryEnv.cpp
+        ../include/binary/classBinaryEnv.h
+        )
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${INFERENCEBINARYTPG_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${INFERENCEBINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
