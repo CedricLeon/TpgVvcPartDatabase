@@ -10,6 +10,8 @@
 #include "../../include/binary/defaultBinaryEnv.h"
 #include "../../include/binary/classBinaryEnv.h"
 
+void importTPG(BinaryDefaultEnv* le, Environment& env, TPG::TPGGraph& tpg);
+Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(const char datasetPath[100], BinaryDefaultEnv* le, std::vector<uint8_t>* splitList);
 void runOneTPG(const TPG::TPGVertex* root, TPG::TPGExecutionEngine& tee, BinaryDefaultEnv* le);
 
 int main(int argc, char* argv[])
@@ -73,28 +75,222 @@ int main(int argc, char* argv[])
 
     // Initialising the number of CUs used
     uint64_t nbTrainingElements = 110000;   // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
-                                            // Balanced database with full classes : 329999
+                                            // Balanced database with full classes : 330000
                                             // Unbalanced database : 1136424
                                             // Number of CUs preload changed every nbGeneTargetChange generation for training and load only once for validation
     uint64_t nbTrainingTargets  = 10000;
     uint64_t nbGeneTargetChange = 30;
     uint64_t nbValidationTarget = 1000;
 
-    // The action the binary TPG will be specialized in (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
-    int speAct = 4;
+    // ************************************************** INSTANCES *************************************************
 
-    // ---------------- Instantiate LearningEnvironment, Environment and TPGGraph ----------------
-    auto *le = new BinaryDefaultEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    // ---------------- Instantiate 6 LearningEnvironments, 6 Environments, 6 TPGGraphs and 6 TPGExecutionEngines ----------------
+    // 6 LearningEnvironments are required because each instance own its specializedAction, its target vector, etc...
+    // And therefore, each of the following object (Environment, TPGGraph, Engine, ...) depends on the learningEnvironment. So, 6 of each.
+    auto *leNP = new BinaryDefaultEnv({0, 1}, 0, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *leQT = new BinaryDefaultEnv({0, 1}, 1, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *leBTH = new BinaryDefaultEnv({0, 1}, 2, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *leBTV = new BinaryDefaultEnv({0, 1}, 3, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *leTTH = new BinaryDefaultEnv({0, 1}, 4, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *leTTV = new BinaryDefaultEnv({0, 1}, 5, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+
     // Instantiate the environment that will embed the LearningEnvironment
-    Environment env(set, le->getDataSources(), params.nbRegisters, params.nbProgramConstant);
+    Environment envNP (set, leNP->getDataSources(),  params.nbRegisters, params.nbProgramConstant);
+    Environment envQT( set, leQT->getDataSources(),  params.nbRegisters, params.nbProgramConstant);
+    Environment envBTH(set, leBTH->getDataSources(), params.nbRegisters, params.nbProgramConstant);
+    Environment envBTV(set, leBTV->getDataSources(), params.nbRegisters, params.nbProgramConstant);
+    Environment envTTH(set, leTTH->getDataSources(), params.nbRegisters, params.nbProgramConstant);
+    Environment envTTV(set, leTTV->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
     // Instantiate the TPGGraph that we will load
-    auto tpg = TPG::TPGGraph(env);
+    auto tpgNP  = TPG::TPGGraph(envNP);
+    auto tpgQT  = TPG::TPGGraph(envQT);
+    auto tpgBTH = TPG::TPGGraph(envBTH);
+    auto tpgBTV = TPG::TPGGraph(envBTV);
+    auto tpgTTH = TPG::TPGGraph(envTTH);
+    auto tpgTTV = TPG::TPGGraph(envTTV);
 
     // Instantiate the tee that will handle the decisions taken by the TPG
-    TPG::TPGExecutionEngine tee(env);
+    TPG::TPGExecutionEngine teeNP(envNP);
+    TPG::TPGExecutionEngine teeQT(envQT);
+    TPG::TPGExecutionEngine teeBTH(envBTH);
+    TPG::TPGExecutionEngine teeBTV(envBTV);
+    TPG::TPGExecutionEngine teeTTH(envTTH);
+    TPG::TPGExecutionEngine teeTTV(envTTV);
 
     // ---------------- Import TPG graph from .dot file ----------------
+    importTPG(leNP,  envNP,  tpgNP);
+    importTPG(leQT,  envQT,  tpgQT);
+    importTPG(leBTH, envBTH, tpgBTH);
+    importTPG(leBTV, envBTV, tpgBTV);
+    importTPG(leTTH, envTTH, tpgTTH);
+    importTPG(leTTV, envTTV, tpgTTV);
+
+    // ---------------- Execute TPG from root on the environment ----------------
+    auto rootNP  = tpgNP.getRootVertices().front();
+    auto rootQT  = tpgQT.getRootVertices().front();
+    auto rootBTH = tpgBTH.getRootVertices().front();
+    auto rootBTV = tpgBTV.getRootVertices().front();
+    auto rootTTH = tpgTTH.getRootVertices().front();
+    auto rootTTV = tpgTTV.getRootVertices().front();
+
+    // ************************************************** MAIN RUN *************************************************
+    // Path to the global database with 330.000 elements (55.000 of each class)
+    char datasetPath[100]  = "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/";
+
+    auto* dataHandler = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
+    auto* splitList = new std::vector<uint8_t>;
+
+    // Load a vector of 1000 CUs (dataHandler) and their corresponding split (splitList)
+    // -------------------------- Load a global vector of 1.000 CUs --------------------------
+    for(uint64_t idx_targ = 0; idx_targ < leNP->NB_VALIDATION_TARGETS; idx_targ++)
+    {
+        Data::PrimitiveTypeArray2D<uint8_t>* target = getRandomCU(datasetPath, leNP, splitList);
+        dataHandler->push_back(target);
+        // Optimal split is stored in splitList inside getRandomCU()
+    }
+
+    // -------------------------- Load next CU for all TPG --------------------------
+    uint64_t score = 0;
+    int actionID;
+    int chosenAction = -1;
+
+    // Run NB_VALIDATION_TARGETS times the TPG, each time on a different CU
+    for(uint64_t nbCU = 0; nbCU < leNP->NB_VALIDATION_TARGETS; nbCU++)
+    {
+        // -------------------------- Load next CU for all TPGs --------------------------
+        leNP->setCurrentCu(*dataHandler->at(nbCU));
+        leQT->setCurrentCu(*dataHandler->at(nbCU));
+        leBTH->setCurrentCu(*dataHandler->at(nbCU));
+        leBTV->setCurrentCu(*dataHandler->at(nbCU));
+        leTTH->setCurrentCu(*dataHandler->at(nbCU));
+        leTTV->setCurrentCu(*dataHandler->at(nbCU));
+
+        // ************************************** ORDER : NP QT BTH BTV TTH TTV ***************************************
+        /*// -------------------------- Call NP TPG --------------------------
+        actionID = (int) ((const TPG::TPGAction *) teeNP.executeFromRoot(* rootNP).back())->getActionID();
+        std::cout << "NP Action : " << actionID << std::endl;
+        if(actionID == 1)
+            chosenAction = leNP->getSpecializedAction();
+        else
+        {
+            // -------------------------- Call QT TPG --------------------------
+            actionID = (int) ((const TPG::TPGAction *) teeQT.executeFromRoot(* rootQT).back())->getActionID();
+            std::cout << "QT Action : " << actionID << std::endl;
+            if(actionID == 1)
+                chosenAction = leQT->getSpecializedAction();
+            else
+            {
+                // -------------------------- Call BTH TPG --------------------------
+                actionID = (int) ((const TPG::TPGAction *) teeBTH.executeFromRoot(* rootBTH).back())->getActionID();
+                std::cout << "BTH Action : " << actionID << std::endl;
+                if(actionID == 1)
+                    chosenAction = leBTH->getSpecializedAction();
+                else
+                {
+                    // -------------------------- Call BTV TPG --------------------------
+                    actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
+                    std::cout << "BTV Action : " << actionID << std::endl;
+                    if(actionID == 1)
+                        chosenAction = leBTV->getSpecializedAction();
+                    else
+                    {
+                        // -------------------------- Call TTH TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
+                        std::cout << "TTH Action : " << actionID << std::endl;
+                        if(actionID == 1)
+                            chosenAction = leTTH->getSpecializedAction();
+                        else
+                        {
+                            // -------------------------- Call TTV TPG --------------------------
+                            actionID = (int) ((const TPG::TPGAction *) teeTTV.executeFromRoot(* rootTTV).back())->getActionID();
+                            std::cout << "TTV Action : " << actionID << std::endl;
+                            if(actionID == 1)
+                                chosenAction = leTTV->getSpecializedAction();
+                             // TTV
+                        } // TTH
+                    } // BTV
+                } // BTH
+            } // QT
+        } // NP*/
+
+        // ************************************** ORDER : TTV NP QT BTH BTV TTH ***************************************
+        // -------------------------- Call TTV TPG --------------------------
+        actionID = (int) ((const TPG::TPGAction *) teeTTV.executeFromRoot(* rootTTV).back())->getActionID();
+        std::cout << "TTV Action : " << actionID << std::endl;
+        if(actionID == 1)
+            chosenAction = leTTV->getSpecializedAction();
+        else
+        {
+            // -------------------------- Call NP TPG --------------------------
+            actionID = (int) ((const TPG::TPGAction *) teeNP.executeFromRoot(* rootNP).back())->getActionID();
+            std::cout << "NP Action : " << actionID << std::endl;
+            if(actionID == 1)
+                chosenAction = leNP->getSpecializedAction();
+            else
+            {
+                // -------------------------- Call QT TPG --------------------------
+                actionID = (int) ((const TPG::TPGAction *) teeQT.executeFromRoot(* rootQT).back())->getActionID();
+                std::cout << "QT Action : " << actionID << std::endl;
+                if(actionID == 1)
+                    chosenAction = leQT->getSpecializedAction();
+                else
+                {
+                    // -------------------------- Call BTH TPG --------------------------
+                    actionID = (int) ((const TPG::TPGAction *) teeBTH.executeFromRoot(* rootBTH).back())->getActionID();
+                    std::cout << "BTH Action : " << actionID << std::endl;
+                    if(actionID == 1)
+                        chosenAction = leBTH->getSpecializedAction();
+                    else
+                    {
+                        // -------------------------- Call BTV TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
+                        std::cout << "BTV Action : " << actionID << std::endl;
+                        if(actionID == 1)
+                            chosenAction = leBTV->getSpecializedAction();
+                        else
+                        {
+                            // -------------------------- Call TTH TPG --------------------------
+                            actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
+                            std::cout << "TTH Action : " << actionID << std::endl;
+                            if(actionID == 1)
+                                chosenAction = leTTH->getSpecializedAction();
+                            // TTH
+                        } // BTV
+                    } // BTH
+                } // QT
+            } // NP
+        } // TTV
+
+        // -------------------------- Update Score --------------------------
+        std::cout << "Action : " << chosenAction << ", real Split : " << (int) splitList->at(nbCU) << std::endl;
+        if(chosenAction == (int) splitList->at(nbCU))
+            score++;
+
+        //std::cout << "TPG: " << actionID << " Sol: " << (uint64_t) le->getOptimalSplit() << std::endl;
+    }
+    std::cout << "Score : " << score << std::endl;
+
+    // ---------------- Clean ----------------
+    // instructions
+    for (unsigned int i = 0; i < set.getNbInstructions(); i++)
+        delete (&set.getInstruction(i));
+    // LearningEnvironment
+    delete leNP;
+    delete leQT;
+    delete leBTH;
+    delete leBTV;
+    delete leTTH;
+    delete leTTV;
+    // Data and solution handlers
+    delete dataHandler;
+    delete splitList;
+
+    return 0;
+}
+
+void importTPG(BinaryDefaultEnv* le, Environment& env, TPG::TPGGraph& tpg)
+{
     try{
         char tpgPath[100] = ROOT_DIR"/TPG/";
         std::string speActionName = le->getActionName(le->getSpecializedAction());
@@ -105,17 +301,50 @@ int main(int argc, char* argv[])
     }catch (std::runtime_error& e){
         std::cout << e.what() << std::endl;
     }
+}
 
-    // ---------------- Execute TPG from root on the environment ----------------
-    auto root = tpg.getRootVertices().front();
-    runOneTPG(root, tee, le);
+Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(const char datasetPath[100], BinaryDefaultEnv* le, std::vector<uint8_t>* splitList)
+{
+    // ------------------ Opening and Reading a random CU file ------------------
+    // Generate the path for a random CU
+    uint32_t next_CU_number = rand() % (int) le->NB_TRAINING_ELEMENTS; //le->getRng().getInt32(0, (int) le->NB_TRAINING_ELEMENTS - 1);
+    std::cout << "next_CU_number : " << next_CU_number << std::endl;
+    char next_CU_number_string[100];
+    std::sprintf(next_CU_number_string, "%d", next_CU_number);
+    char CU_path[100];
+    std::strcpy(CU_path, datasetPath);
+    char bin_extension[10] = ".bin";
+    std::strcat(CU_path, next_CU_number_string);
+    std::strcat(CU_path, bin_extension);
 
-    // ---------------- Clean ----------------
-    for (unsigned int i = 0; i < set.getNbInstructions(); i++)
-        delete (&set.getInstruction(i));
-    delete le;
+    // Opening the file
+    std::FILE *input = std::fopen(CU_path, "r");
+    if (!input)
+    {
+        char error_file_path[300] = "File opening failed : ";
+        std::strcat(error_file_path, CU_path);
+        std::perror(error_file_path);
+        return nullptr; // return EXIT_FAILURE;
+    }
 
-    return 0;
+    // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU pixels values and the 1025th value is the optimal split
+    uint8_t contents[32*32+1];
+    size_t nbCharRead = std::fread(&contents[0], 1, 32*32+1, input);
+    if (nbCharRead != 32*32+1)
+        std::perror("File Read failed");
+
+    // Important ...
+    std::fclose(input);
+
+    // Creating a new PrimitiveTypeArray<uint8_t> and filling it
+    auto *randomCU = new Data::PrimitiveTypeArray2D<uint8_t>(32, 32);   // 2D Array
+    for (uint32_t pxlIndex = 0; pxlIndex < 32 * 32; pxlIndex++)
+        randomCU->setDataAt(typeid(uint8_t), pxlIndex, contents[pxlIndex]);
+
+    // Store the corresponding optimal split
+    splitList->push_back(contents[1024]);
+
+    return randomCU;
 }
 
 void runOneTPG(const TPG::TPGVertex* root, TPG::TPGExecutionEngine& tee, BinaryDefaultEnv* le)
@@ -133,7 +362,7 @@ void runOneTPG(const TPG::TPGVertex* root, TPG::TPGExecutionEngine& tee, BinaryD
     // Load NB_VALIDATION_TARGETS CUs from the database
     for(uint64_t idx_targ = 0; idx_targ < le->NB_VALIDATION_TARGETS; idx_targ++)
     {
-        Data::PrimitiveTypeArray2D<uint8_t>* target = le->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION, datasetPath);
+        Data::PrimitiveTypeArray2D<uint8_t>* target = le->getRandomCU(Learn::LearningMode::VALIDATION, datasetPath);
         BinaryDefaultEnv::validationTargetsCU->push_back(target);
         // Optimal split is stored in validationTargetsOptimalSplits inside getRandomCU()
     }

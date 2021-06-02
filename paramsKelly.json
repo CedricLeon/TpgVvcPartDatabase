@@ -24,9 +24,9 @@
 		},
 
 		"prog": {
-			"minConstValue": -100,		 // Restricted interval for convolution instruction (before : [-127;128])
-			"maxConstValue": 100,
-			"pConstantMutation": 0.95,   // Probality to mutate ONE of the program constant (default: 0.5)
+			"minConstValue": -10,		 // Restricted interval for convolution instruction (before : [-127;128])
+			"maxConstValue": 10,
+			"pConstantMutation": 0.5,   // Probality to mutate ONE of the program constant (default: 0.5)
 			"maxProgramSize": 96,
 			"pDelete": 0.5,				 // Every following probability comes from Kelly
 			"pAdd": 0.5,

@@ -1,20 +1,22 @@
 {
-	"archiveSize": 2000,
+	"nbGenerations" : 200,
+	"archiveSize": 50,
 	"archivingProbability": 0.01,
 	"nbIterationsPerPolicyEvaluation": 1,
 	"maxNbActionsPerEval": 1000,
-	"ratioDeletedRoots": 0.95,
+	"ratioDeletedRoots": 0.5,
 	"maxNbEvaluationPerPolicy": 10,
 	"doValidation": true,
-	"nbProgramConstant": 9,
+	"nbProgramConstant": 10,
+	"nbRegisters" : 8,
 
 	"mutation": {
 		"tpg": {
-			"nbRoots": 2000,
+			"nbRoots": 360,
 			"nbActions": 2,
 			"maxInitOutgoingEdges": 2,
-			"maxOutgoingEdges": 5,
-			"pEdgeDeletion": 0.7,
+			"maxOutgoingEdges": 5,		 // A augmenter, 20 ? (ALE : 999 ...)
+			"pEdgeDeletion": 0.7,		 // Every following probability comes from Kelly
 			"pEdgeAddition": 0.7,
 			"pProgramMutation": 0.2,
 			"pEdgeDestinationChange": 0.1,
@@ -22,11 +24,11 @@
 		},
 
 		"prog": {
-			"minConstValue": -10,		// Restricted interval for convolution instruction (before : [-127;128])
-			"maxConstValue": 10,
-			"pConstantMutation": 0.9,   // Probality to mutate ONE of the program constant (default: 0.5)
-			"maxProgramSize": 50,
-			"pDelete": 0.5,
+			"minConstValue": -100,		 // Restricted interval for convolution instruction (before : [-127;128])
+			"maxConstValue": 100,
+			"pConstantMutation": 0.5,   // Probality to mutate ONE of the program constant (default: 0.5)
+			"maxProgramSize": 96,
+			"pDelete": 0.5,				 // Every following probability comes from Kelly
 			"pAdd": 0.5,
 			"pMutate": 1.0,
 			"pSwap": 1.0

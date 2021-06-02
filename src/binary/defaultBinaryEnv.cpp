@@ -83,11 +83,11 @@ std::vector<uint8_t> *BinaryDefaultEnv::trainingTargetsOptimalSplits = new std::
 std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *BinaryDefaultEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
 std::vector<uint8_t> *BinaryDefaultEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray2D<uint8_t> *BinaryDefaultEnv::getRandomCU(uint64_t index, Learn::LearningMode mode, const char current_CU_path[100])
+Data::PrimitiveTypeArray2D<uint8_t> *BinaryDefaultEnv::getRandomCU(Learn::LearningMode mode, const char current_CU_path[100])
 {
     // ------------------ Opening and Reading a random CU file ------------------
     // Generate the path for a random CU
-    uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
+    uint32_t next_CU_number = this->rng.getInt32(0, (int) NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
     char CU_path[100];
@@ -148,7 +148,7 @@ void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         {
             for (uint64_t idx_targ = 0; idx_targ < NB_VALIDATION_TARGETS; idx_targ++)
             {
-                Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION, current_CU_path);
+                Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::VALIDATION, current_CU_path);
                 BinaryDefaultEnv::validationTargetsCU->push_back(target);
             }
         }
@@ -156,7 +156,7 @@ void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         // ---  Loading next targets ---
         for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
         {
-            Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(idx_targ, Learn::LearningMode::TRAINING, current_CU_path);
+            Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::TRAINING, current_CU_path);
             BinaryDefaultEnv::trainingTargetsCU->push_back(target);
             // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
         }
@@ -346,5 +346,7 @@ std::string BinaryDefaultEnv::getActionName(uint64_t speAct)
 
 int BinaryDefaultEnv::getSpecializedAction() const { return specializedAction; }
 uint8_t BinaryDefaultEnv::getOptimalSplit()  const { return optimal_split; }
+Mutator::RNG BinaryDefaultEnv::getRng() const { return rng; }
 
 void BinaryDefaultEnv::setCurrentMode(Learn::LearningMode mode) { BinaryDefaultEnv::currentMode = mode; }
+void BinaryDefaultEnv::setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu) { currentCU = currentCu; }

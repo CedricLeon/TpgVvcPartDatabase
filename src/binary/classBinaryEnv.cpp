@@ -68,7 +68,7 @@ std::vector<uint8_t> *BinaryClassifEnv::trainingTargetsOptimalSplits = new std::
 std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *BinaryClassifEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
 std::vector<uint8_t> *BinaryClassifEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray2D<uint8_t> *BinaryClassifEnv::getRandomCU(uint64_t index, Learn::LearningMode mode, const char current_CU_path[100])
+Data::PrimitiveTypeArray2D<uint8_t> *BinaryClassifEnv::getRandomCU(Learn::LearningMode mode, const char current_CU_path[100])
 {
     // ------------------ Opening and Reading a random CU file ------------------
     // Generate the path for a random CU
@@ -133,7 +133,7 @@ void BinaryClassifEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         {
             for (uint64_t idx_targ = 0; idx_targ < NB_VALIDATION_TARGETS; idx_targ++)
             {
-                Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION, current_CU_path);
+                Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::VALIDATION, current_CU_path);
                 BinaryClassifEnv::validationTargetsCU->push_back(target);
             }
         }
@@ -141,7 +141,7 @@ void BinaryClassifEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         // ---  Loading next targets ---
         for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
         {
-            Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(idx_targ, Learn::LearningMode::TRAINING, current_CU_path);
+            Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::TRAINING, current_CU_path);
             BinaryClassifEnv::trainingTargetsCU->push_back(target);
             // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
         }
@@ -330,3 +330,6 @@ std::string BinaryClassifEnv::getActionName(uint64_t speAct)
 }
 
 int BinaryClassifEnv::getSpecializedAction() const { return specializedAction; }
+Mutator::RNG BinaryClassifEnv::getRng() const { return rng; }
+
+void BinaryClassifEnv::setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu) { currentCU = currentCu; }

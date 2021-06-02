@@ -155,7 +155,7 @@ public:
      * \param[in] mode the LearningMode : store either in validationTargetsOptimalSplits or trainingTargetsOptimalSplits
      * \return a PrimitiveTypeArray2D<uint8_t>* containing loaded CU datas
      */
-    Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode, const char current_CU_path[100]);
+    Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(Learn::LearningMode mode, const char current_CU_path[100]);
 
     /**
      * \brief Load the next preloaded CU either for training or for validation (depending on the currentMode)
@@ -197,12 +197,20 @@ public:
      * \brief Getter for optimalSplit
      */
     uint8_t getOptimalSplit() const;
+    /**
+     * \brief Getter for rng
+     */
+    Mutator::RNG getRng() const;
 
     // ********************************************* SETTERS *********************************************
     /**
      * \brief Setter for currentMode
      */
     void setCurrentMode(Learn::LearningMode mode);
+    /**
+     * \brief Setter for currentCU
+     */
+    void setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu);
 
     // ********************************************* LearningEnvironment *********************************************
     /**
