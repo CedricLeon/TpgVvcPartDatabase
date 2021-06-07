@@ -219,14 +219,14 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
     // Reset the learning mode to TESTING
     this->reset(0, Learn::LearningMode::TESTING);
 
-    // Computing Score
+    // Computing Score and ScoreMax
     double validationScore = 0.0;
-    validationScore += ((double) classifTable[0][0]);
-    validationScore += (double) classifTable[1][1];
-    // Computing ScoreMax :
     double scoreMax = 0.0;
-    scoreMax += ((double) nbPerClass[0]);
-    scoreMax += (double) nbPerClass[1];
+    for (int i = 0; i < nbClasses; i++)
+    {
+        validationScore += ((double) classifTable[i][i]);
+        scoreMax += ((double) nbPerClass[i]);
+    }
 
     // What is the specialized action ?
     std::string speActionName = this->getActionName(this->specializedAction);
@@ -241,9 +241,11 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
         if (file)
         {
             file << "-------------------------------------------------" << std::endl;
-            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore / scoreMax * 100 << "  ("
+            double otherNorm = (double) classifTable[0][0] / (double) nbPerClass[0] * 100;
+            double actNorm = (double) classifTable[1][1] / (double) nbPerClass[1] * 100;
+            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << (otherNorm + actNorm) / 2 << "  ("
                  << validationScore << "/" << scoreMax << ")" << std::endl;
-            file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
+            file << "  OTHER    " << speActionName << "  Nb  |     OTHER     " << speActionName << "    Nb" << std::endl;
 
             for (int x = 0; x < nbClasses; x++)
             {
@@ -290,7 +292,7 @@ void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG:
             file << std::setw(4) << numGen << "   ";
             file << std::fixed << std::setprecision(2) << otherNorm << "  ";
             file << actNorm << "  ";
-            file << validationScore / scoreMax * 100 << std::endl;
+            file << (otherNorm + actNorm) / 2 << std::endl;
             file.close();
         } else
         {

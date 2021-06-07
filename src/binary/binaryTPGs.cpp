@@ -113,7 +113,8 @@ int main(int argc, char* argv[])
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
     // Initialising the number of CUs used
-    uint64_t nbTrainingElements = 110000;   // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
+    uint64_t nbTrainingElements = 60000;    // Balanced database with equal of each class : 60000 (10000 (6: TTV), 12000 (5: NP), 15000 (4: QT), 20000 (3: BTH),  30000 (2: BTV et TTH))à
+                                            // Database with 55000 elements of one class and 11000 elements of each other class : 110000
                                             // Balanced database with full classes : 329999
                                             // Unbalanced database : 1136424
     // Number of CUs preload changed every nbGeneTargetChange generation for training and load only once for validation
@@ -122,7 +123,7 @@ int main(int argc, char* argv[])
     uint64_t nbValidationTarget = 1000;
 
     // The action the binary TPG will be specialized in (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
-    int speAct = 5;
+    int speAct = 0;
     if (argc > 1)
         speAct = atoi(argv[1]);
     else
@@ -130,7 +131,7 @@ int main(int argc, char* argv[])
 
     // ---------------- Instantiate Environment and Agent ----------------
     // LearningEnvironment
-    auto *LE = new BinaryDefaultEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *LE = new BinaryClassifEnv({0, 1}, speAct, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
     // Creating a second environment used to compute the classification table
     Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
@@ -140,12 +141,35 @@ int main(int argc, char* argv[])
 
     // ---------------- Initialising paths ----------------
     // /home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/
-    // /home/cleonard/Data/binary_datasets/BTH_dataset/
-    char datasetPath[100] = "/home/cleonard/Data/binary_datasets/";
-    std::string speActionName = LE->getActionName(speAct);
+    // /home/cleonard/Data/binary_datasets/`automatically add the extension`
+    char datasetPath[100] = "/home/cleonard/Data/binary_datasets/balanced_";
+    std::string speActionName = BinaryClassifEnv::getActionName(speAct);
     std::strcat(datasetPath, speActionName.c_str());
     char dataset_extension[10] = "_dataset/";
     std::strcat(datasetPath, dataset_extension);
+
+    /*******************************************************************************************************************
+                      SPLITS ?
+                        |
+                     |------|
+                    TTV   OTHER
+                            |
+                         |------|
+                        NP     OTHER
+                                 |
+                              |------|
+                             QT    OTHER
+                                     |
+                                  |------|
+                                 BTH   OTHER
+                                         |
+                                      |------|
+                                     BTV    TTH
+
+    The second type of binary TPG training is lead on balanced database (with each split in equal quantity)
+    But the database of a split doesn't contain CUs of split tested previously in the tree
+    (ex: NP database doesn't own TTV CU)
+    *******************************************************************************************************************/
 
     //const char parametersPrintPath[100] = "/home/cleonard/dev/TpgVvcPartDatabase/build/jsonParams.json";
     std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTable.txt");
@@ -208,7 +232,7 @@ int main(int argc, char* argv[])
 
         // Print Classification Table
         const TPG::TPGVertex* bestRoot = la.getBestRoot().first;
-        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName, false);
+        LE->printClassifStatsTable(env, bestRoot, (int) i, fileClassificationTableName, false);
     }
 
     // ************************************************** TRAINING END *************************************************
@@ -224,6 +248,8 @@ int main(int argc, char* argv[])
     bestStats.open("out_best_stats.md");
     bestStats << ps;
     bestStats.close();
+
+    // close logs file
     stats.close();
 
     // cleanup

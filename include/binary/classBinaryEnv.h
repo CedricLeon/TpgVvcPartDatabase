@@ -162,7 +162,7 @@ public:
      * (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)
      * \param[in] speAct the number of the action
      */
-    std::string getActionName(uint64_t speAct);
+    static std::string getActionName(uint64_t speAct);
 
     // ********************************************* GETTERS *********************************************
     /**
