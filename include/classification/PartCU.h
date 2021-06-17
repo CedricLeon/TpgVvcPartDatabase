@@ -7,7 +7,6 @@
 #include <fstream>
 
 #include <gegelati.h>
-// #include <array2DWrapper.h>
 
 class PartCU : public Learn::ClassificationLearningEnvironment {
 private:
@@ -69,7 +68,7 @@ public:
     */
     static std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *trainingTargetsCU; //  PrimitiveTypeArray / Array2DWrapper
     static std::vector<uint8_t> *trainingTargetsOptimalSplits;
-    // Index of the actual loaded CU 
+    // Index of the actual loaded CU
     uint64_t actualTrainingCU;
     // ****** VALIDATION Arguments ******
     const uint64_t NB_VALIDATION_TARGETS;       // default 1 000

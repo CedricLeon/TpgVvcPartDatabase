@@ -173,6 +173,10 @@ public:
      * \brief Getter for rng
      */
     Mutator::RNG getRng() const;
+    /**
+     * \brief Getter for currentClass
+     */
+    uint8_t getOptimalSplit() const;
 
     // ********************************************* SETTERS *********************************************
     /**

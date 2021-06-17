@@ -333,5 +333,6 @@ std::string BinaryClassifEnv::getActionName(uint64_t speAct)
 
 int BinaryClassifEnv::getSpecializedAction() const { return specializedAction; }
 Mutator::RNG BinaryClassifEnv::getRng() const { return rng; }
+uint8_t BinaryClassifEnv::getOptimalSplit() const { return this->currentClass; }
 
 void BinaryClassifEnv::setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu) { currentCU = currentCu; }

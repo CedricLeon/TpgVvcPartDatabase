@@ -42,15 +42,6 @@ void getKey(std::atomic<bool>& exit)
 
 int main(int argc, char* argv[])
 {
-    // argv[] contains :
-    //      - The number of the specific action
-/*    if(argc != 2)
-    { // We expect 1 arguments: the program name, the source path and the destination path
-        std::cerr << "Usage: " << argv[0] << " NB_ACT" << std::endl;
-        std::cerr << "NB_ACT should be (0: NP, 1: QT, 2: BTH, 3:BTV, 4: TTH, 5: TTV)." << std::endl;
-        return 1;
-    }*/
-
     std::cout << "Start the training of a binary TPG" << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
