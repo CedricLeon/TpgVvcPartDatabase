@@ -109,3 +109,17 @@ add_executable(${INFERENCEBINARYTPG_EXE_NAME}
 # Add GEGELATI and CMAKE_SOURCE_DIR
 target_link_libraries(${INFERENCEBINARYTPG_EXE_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${INFERENCEBINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
+# ************ FEATURES SOLUTION (F1) ***************
+# This executable trains a TPG in the classification environment (6 actions) from the CU pre-calculated features
+set(FEATURES_EXE_NAME ${PROJECT_NAME}_featuresEnv)
+add_executable(${FEATURES_EXE_NAME}
+        ../src/features/featuresTPG.cpp
+        ../src/features/FeaturesEnv.cpp
+        ../include/features/FeaturesEnv.h
+        ../params.json
+        )
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${FEATURES_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${FEATURES_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
