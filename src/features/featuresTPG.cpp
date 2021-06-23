@@ -38,7 +38,7 @@ void getKey(std::atomic<bool>& exit)
     std::cout.flush();
 }
 
-int main()
+int main(int argc, char* argv[])
 {
     std::cout << "Start the training of a TPG based on CU features extraction (CNN)" << std::endl;
 
@@ -56,7 +56,7 @@ int main()
     auto ln_double    = [](double a)->double {return std::log(a); };
     auto exp_double   = [](double a)->double {return std::exp(a); };
     auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
-    auto conv2D_double = [](const Data::Constant coeff[9], const uint8_t data[3][3])->double {
+    auto conv2D_double = [](const Data::Constant coeff[9], const double data[3][3])->double {
         double res = 0.0;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -67,7 +67,6 @@ int main()
     };
 
     // Add those instructions to instruction set
-    // double
     set.add(*(new Instructions::LambdaInstruction<double, double>(minus_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(add_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(mult_double)));
@@ -76,7 +75,7 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<double>(exp_double)));
     set.add(*(new Instructions::LambdaInstruction<double>(ln_double)));
     set.add(*(new Instructions::LambdaInstruction<double, Data::Constant>(multByConst_double)));
-    set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const uint8_t[3][3]>(conv2D_double)));
+    set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const double[3][3]>(conv2D_double)));
 
 
     // ******************************************* PARAMETERS AND ENVIRONMENT ******************************************
@@ -96,9 +95,21 @@ int main()
     uint64_t nbGeneTargetChange = 30;
     uint64_t nbValidationTarget = 1000;
 
+    // Extracting the seed parameter from main arguments
+    int seed = 0;
+    if (argc > 1)
+    {
+        seed = atoi(argv[1]);
+        std::cout << "SEED is precised: " << seed << std::endl;
+    }
+    else
+    {
+        std::cout << "SEED was not precised, using default value: " << seed << std::endl;
+    }
+
     // ---------------- Instantiate Environment and Agent ----------------
     // LearningEnvironment
-    auto *LE = new FeaturesEnv({0, 1, 2, 3, 4, 5}, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, 0);
+    auto *LE = new FeaturesEnv({0, 1, 2, 3, 4, 5}, nbTrainingElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget, (size_t) seed);
     // Creating a second environment used to compute the classification table
     Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
@@ -127,13 +138,13 @@ int main()
     // ************************************************ CONSOLE CONTROL ************************************************
 
     // Start a thread to control the loop
-#ifndef NO_CONSOLE_CONTROL
+/*#ifndef NO_CONSOLE_CONTROL
     std::atomic<bool> exitProgram = true; // (set to false by other thread)
     std::thread threadKeyboard(getKey, std::ref(exitProgram));
     while (exitProgram); // Wait for other thread to print key info.
 #else
     std::atomic<bool> exitProgram = false;
-#endif
+#endif*/
 
     // ************************************************ LOGS MANAGEMENT ************************************************
 
@@ -154,7 +165,7 @@ int main()
     // Used as it is, we load 10 000 CUs and we use them for every roots during 30 generations
     // For Validation, 1 000 CUs are loaded and used forever
 
-    for (uint64_t i = 0; i < params.nbGenerations && !exitProgram; i++)
+    for (uint64_t i = 0; i < params.nbGenerations /*&& !exitProgram*/; i++)
     {
         // Update Training and Validation targets depending on the generation
         LE->UpdatingTargets(i, datasetPath);
@@ -196,11 +207,11 @@ int main()
         delete (&set.getInstruction(i));
     delete LE;
 
-#ifndef NO_CONSOLE_CONTROL
+/*#ifndef NO_CONSOLE_CONTROL
     // Exit the thread
     std::cout << "Exiting program, press a key then [enter] to exit if nothing happens.";
     threadKeyboard.join();
-#endif
+#endif*/
 
     return 0;
 }

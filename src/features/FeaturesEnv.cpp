@@ -369,7 +369,7 @@ void FeaturesEnv::printClassifStatsTable(const Environment& env, const TPG::TPGV
                 file << std::setw(colWidth) << "Total";
                 for(unsigned long nb : nbPerClass)
                     file << std::setw(colWidth) << nb;
-                file << std::endl << std::endl;
+                file << std::setw(colWidth) << this->NB_VALIDATION_TARGETS << std::endl << std::endl;
 
                 file << std::setw(colWidth) << "Gen" << std::setw(colWidth) << "NS"
                      << std::setw(colWidth) << "QT"  << std::setw(colWidth) << "BTH"

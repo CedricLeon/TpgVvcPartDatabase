@@ -58,7 +58,7 @@ public:
      * \brief Number of generation between training set reloads
      * (In order to accelerate the Learning we preload targets (CUs) which are used for X generations)
      */
-    const uint64_t  NB_GENERATION_BEFORE_TARGETS_CHANGE;
+    const uint64_t NB_GENERATION_BEFORE_TARGETS_CHANGE;
 
 
     // ********************************************* TRAINING Arguments *********************************************
