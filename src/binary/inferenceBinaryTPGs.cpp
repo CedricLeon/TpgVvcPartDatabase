@@ -1,7 +1,5 @@
 #include <iostream>
 #include <cmath>
-#include <thread>
-#include <atomic>
 #include <cinttypes>
 #include <cstdlib>
 

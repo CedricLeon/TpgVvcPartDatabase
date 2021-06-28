@@ -98,8 +98,8 @@ target_compile_definitions(${BINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURC
 
 # ************ BINARY TPGs INFERENCE SOLUTION ***************
 # This executable load 6 binary TPGs (each specialized in a different action) and compute their mean score on a database
-set(INFERENCEBINARYTPG_EXE_NAME ${PROJECT_NAME}_inferenceBinary)
-add_executable(${INFERENCEBINARYTPG_EXE_NAME}
+set(INFERENCE_BINARY_TPG_EXE_NAME ${PROJECT_NAME}_inferenceBinary)
+add_executable(${INFERENCE_BINARY_TPG_EXE_NAME}
         ../src/binary/inferenceBinaryTPGs.cpp
         ../src/binary/defaultBinaryEnv.cpp
         ../include/binary/defaultBinaryEnv.h
@@ -107,8 +107,8 @@ add_executable(${INFERENCEBINARYTPG_EXE_NAME}
         ../include/binary/classBinaryEnv.h
         )
 # Add GEGELATI and CMAKE_SOURCE_DIR
-target_link_libraries(${INFERENCEBINARYTPG_EXE_NAME} ${GEGELATI_LIBRARIES})
-target_compile_definitions(${INFERENCEBINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+target_link_libraries(${INFERENCE_BINARY_TPG_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${INFERENCE_BINARY_TPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
 
 # ************ FEATURES SOLUTION (F1) ***************
 # This executable trains a TPG in the classification environment (6 actions) from the CU pre-calculated features
@@ -123,3 +123,27 @@ add_executable(${FEATURES_EXE_NAME}
 target_link_libraries(${FEATURES_EXE_NAME} ${GEGELATI_LIBRARIES})
 target_compile_definitions(${FEATURES_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
 
+# ************ BINARY FEATURES SOLUTION (F1) ***************
+# This executable trains a TPG in the binary environment (2 actions) from the CU pre-calculated features
+set(BINARY_FEATURES_EXE_NAME ${PROJECT_NAME}_binaryFeaturesEnv)
+add_executable(${BINARY_FEATURES_EXE_NAME}
+        ../src/features/binaryFeaturesTPG.cpp
+        ../src/features/BinaryFeaturesEnv.cpp
+        ../include/features/BinaryFeaturesEnv.h
+        ../params.json
+        )
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${BINARY_FEATURES_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${BINARY_FEATURES_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
+
+# ************ BINARY FEATURES TPGs INFERENCE SOLUTION ***************
+# This executable load 6 binary TPGs (each specialized in a different action) and compute their mean score on a database
+set(INFERENCE_BINARY_FEATURES_TPG_EXE_NAME ${PROJECT_NAME}_inferenceBinaryFeatures)
+add_executable(${INFERENCE_BINARY_FEATURES_TPG_EXE_NAME}
+        ../src/features/inferenceBinaryFeaturesTPGs.cpp
+        ../src/features/BinaryFeaturesEnv.cpp
+        ../include/features/BinaryFeaturesEnv.h
+        )
+# Add GEGELATI and CMAKE_SOURCE_DIR
+target_link_libraries(${INFERENCE_BINARY_FEATURES_TPG_EXE_NAME} ${GEGELATI_LIBRARIES})
+target_compile_definitions(${INFERENCE_BINARY_FEATURES_TPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_DIR}")
