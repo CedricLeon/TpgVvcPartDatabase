@@ -1,8 +1,6 @@
 #include <iostream>
-#include <sstream>
 #include <cmath>
 #include <thread>
-#include <atomic>
 #include <cinttypes>
 
 #include <gegelati.h>
