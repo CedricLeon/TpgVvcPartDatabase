@@ -7,8 +7,8 @@
 
 #include <gegelati.h>
 
-#include "../../include/binary/defaultBinaryEnv.h"
-#include "../../include/binary/classBinaryEnv.h"
+#include "../../include/binary/DefaultBinaryEnv.h"
+#include "../../include/binary/ClassBinaryEnv.h"
 
 /**
  * \brief Manage training run : press 'q' or 'Q' to stop the training

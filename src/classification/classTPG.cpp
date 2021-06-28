@@ -10,7 +10,7 @@
 
 #include <gegelati.h>
 
-#include "../../include/classification/PartCU.h"
+#include "../../include/classification/ClassEnv.h"
 
 #ifndef NB_GENERATIONS
 #define NB_GENERATIONS 2000
@@ -110,7 +110,7 @@ int main()
     uint64_t nbValidationTarget = 1000;                                                 // 1000
 
     // Instantiate the LearningEnvironment
-    auto *LE = new PartCU({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
+    auto *LE = new ClassEnv({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
 
     std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
     std::cout << "Parameters : "<< std::endl;
@@ -180,9 +180,9 @@ int main()
             {
                 LE->reset(i);
                 for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
-                    delete PartCU::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
-                PartCU::trainingTargetsCU->clear();
-                PartCU::trainingTargetsOptimalSplits->clear();
+                    delete ClassEnv::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
+                ClassEnv::trainingTargetsCU->clear();
+                ClassEnv::trainingTargetsOptimalSplits->clear();
                 LE->actualTrainingCU = 0;
             }
             else        // Load VALIDATION Targets at the beginning of the training (i == 0)
@@ -190,7 +190,7 @@ int main()
                 for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
                 {
                     Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
-                    PartCU::validationTargetsCU->push_back(target);
+                    ClassEnv::validationTargetsCU->push_back(target);
                 } 
             }
 
@@ -198,7 +198,7 @@ int main()
             for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
             {
                 Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
-                PartCU::trainingTargetsCU->push_back(target);
+                ClassEnv::trainingTargetsCU->push_back(target);
                 // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
             }
         }

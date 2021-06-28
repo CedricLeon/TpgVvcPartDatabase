@@ -1,14 +1,15 @@
-#ifndef TPGVVCPARTDATABASE_PARTCU_H
-#define TPGVVCPARTDATABASE_PARTCU_H
+#ifndef TPGVVCPARTDATABASE_CLASSENV_H
+#define TPGVVCPARTDATABASE_CLASSENV_H
 
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <vector>
 
 #include <gegelati.h>
 
-class PartCU : public Learn::ClassificationLearningEnvironment {
+class ClassEnv : public Learn::ClassificationLearningEnvironment {
 private:
 
     // ----- Constant -----
@@ -77,7 +78,7 @@ public:
     uint64_t actualValidationCU;
 
     // Constructor
-    PartCU(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
+    ClassEnv(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
             : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
               //availableActions(actions),
@@ -104,4 +105,4 @@ public:
     bool isTerminal() const;
 };
 
-#endif //TPGVVCPARTDATABASE_PARTCU_H
+#endif //TPGVVCPARTDATABASE_CLASSENV_H

@@ -1,11 +1,10 @@
-#include "../../include/classification/PartCU.h"
-#include <vector>
+#include "../../include/classification/ClassEnv.h"
 
 // ********************************************************************* //
 // ************************** GEGELATI FUNCTIONS *********************** //
 // ********************************************************************* //
 
-void PartCU::doAction(uint64_t actionID)
+void ClassEnv::doAction(uint64_t actionID)
 {
     // Call to default method to increment classificationTable
     ClassificationLearningEnvironment::doAction(actionID);
@@ -16,7 +15,7 @@ void PartCU::doAction(uint64_t actionID)
     // Si nécessaire pour debugguer : printf des actions choisies pour les 1ere gen
 }
 
-std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSources()
+std::vector<std::reference_wrapper<const Data::DataHandler>> ClassEnv::getDataSources()
 {
     // Return a vector containing every element constituting the State of the environment
     std::vector<std::reference_wrapper<const Data::DataHandler>> result{this->currentCU};
@@ -24,7 +23,7 @@ std::vector<std::reference_wrapper<const Data::DataHandler>> PartCU::getDataSour
     return result;
 }
 
-void PartCU::reset(size_t seed, Learn::LearningMode mode)
+void ClassEnv::reset(size_t seed, Learn::LearningMode mode)
 {
     // Reset the classificationTable
     ClassificationLearningEnvironment::reset(seed);
@@ -40,22 +39,22 @@ void PartCU::reset(size_t seed, Learn::LearningMode mode)
     this->LoadNextCU();
 }
 
-Learn::LearningEnvironment *PartCU::clone() const
+Learn::LearningEnvironment *ClassEnv::clone() const
 {
-    return new PartCU(*this);
+    return new ClassEnv(*this);
 }
 
-bool PartCU::isCopyable() const
+bool ClassEnv::isCopyable() const
 {
     return true; // false : to avoid ParallelLearning (Cf LearningAgent)
 }
 
-double PartCU::getScore() const
+double ClassEnv::getScore() const
 {
     return ClassificationLearningEnvironment::getScore();
 }
 
-bool PartCU::isTerminal() const
+bool ClassEnv::isTerminal() const
 {
     // Return if the job is over
     return false;
@@ -64,17 +63,17 @@ bool PartCU::isTerminal() const
 
 
 // ********************************************************************* //
-// *************************** PartCU FUNCTIONS ************************ //
+// *************************** ClassEnv FUNCTIONS ************************ //
 // ********************************************************************* //
 
 // ****** TRAINING Arguments ******
-std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *PartCU::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>; // Array2DWrapper
-std::vector<uint8_t> *PartCU::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
+std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *ClassEnv::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>; // Array2DWrapper
+std::vector<uint8_t> *ClassEnv::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
 // ****** VALIDATION Arguments ******
-std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *PartCU::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;  // Array2DWrapper
-std::vector<uint8_t> *PartCU::validationTargetsOptimalSplits = new std::vector<uint8_t>;
+std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *ClassEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;  // Array2DWrapper
+std::vector<uint8_t> *ClassEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray2D<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::LearningMode mode) {
+Data::PrimitiveTypeArray2D<uint8_t> *ClassEnv::getRandomCU(uint64_t index, Learn::LearningMode mode) {
     // ------------------ Opening and Reading a random CU file ------------------
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
@@ -112,21 +111,21 @@ Data::PrimitiveTypeArray2D<uint8_t> *PartCU::getRandomCU(uint64_t index, Learn::
 
     // Updating the corresponding optimal split depending of the current mode
     if (mode == Learn::LearningMode::TRAINING)
-        PartCU::trainingTargetsOptimalSplits->push_back(contents[1024]);
+        ClassEnv::trainingTargetsOptimalSplits->push_back(contents[1024]);
     else if (mode == Learn::LearningMode::VALIDATION)
-        PartCU::validationTargetsOptimalSplits->push_back(contents[1024]);
+        ClassEnv::validationTargetsOptimalSplits->push_back(contents[1024]);
 
     return randomCU;
 }
 
-void PartCU::LoadNextCU() {
+void ClassEnv::LoadNextCU() {
     // Checking validity is no longer necessary
     if (this->currentMode == Learn::LearningMode::TRAINING)
     {
-        this->currentCU = *PartCU::trainingTargetsCU->at(this->actualTrainingCU);
+        this->currentCU = *ClassEnv::trainingTargetsCU->at(this->actualTrainingCU);
 
         // Updating next split solution
-        this->currentClass = PartCU::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
+        this->currentClass = ClassEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
         this->actualTrainingCU++;
 
         // Looping on the beginning of training targets
@@ -135,10 +134,10 @@ void PartCU::LoadNextCU() {
     }
     else if (this->currentMode == Learn::LearningMode::VALIDATION)
     {
-        this->currentCU = *PartCU::validationTargetsCU->at(this->actualValidationCU);
+        this->currentCU = *ClassEnv::validationTargetsCU->at(this->actualValidationCU);
 
         // Updating next split solution
-        this->currentClass = PartCU::validationTargetsOptimalSplits->at(this->actualValidationCU);
+        this->currentClass = ClassEnv::validationTargetsOptimalSplits->at(this->actualValidationCU);
         this->actualValidationCU++;
 
         // Looping on the beginning of validation targets
@@ -147,7 +146,7 @@ void PartCU::LoadNextCU() {
     }
 }
 
-void PartCU::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile)
+void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile)
 {
     // Print table of classification of the best
     TPG::TPGExecutionEngine tee(env, nullptr);

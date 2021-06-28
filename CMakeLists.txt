@@ -70,11 +70,11 @@ include_directories(${GEGELATI_INCLUDE_DIRS})
 
 # ************ DEFAULT SOLUTION (F1) ***************
 # Create default executable (from the classification environment, Cf. 4EIIS8)
-set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classificationEnv)
+set(DEFAULT_EXE_NAME ${PROJECT_NAME}_classEnv)
 add_executable(${DEFAULT_EXE_NAME}
-               ../src/classification/classifTPG.cpp
-               ../src/classification/PartCU.cpp
-               ../include/classification/PartCU.h
+               ../src/classification/classTPG.cpp
+               ../src/classification/ClassEnv.cpp
+               ../include/classification/ClassEnv.h
                ../params.json
 )
 # Add GEGELATI and CMAKE_SOURCE_DIR
@@ -86,10 +86,10 @@ target_compile_definitions(${DEFAULT_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURCE_
 set(BINARYTPG_EXE_NAME ${PROJECT_NAME}_binary)
 add_executable(${BINARYTPG_EXE_NAME}
         ../src/binary/binaryTPGs.cpp
-        ../src/binary/defaultBinaryEnv.cpp
-        ../include/binary/defaultBinaryEnv.h
-        ../src/binary/classBinaryEnv.cpp
-        ../include/binary/classBinaryEnv.h
+        ../src/binary/DefaultBinaryEnv.cpp
+        ../include/binary/DefaultBinaryEnv.h
+        ../src/binary/ClassBinaryEnv.cpp
+        ../include/binary/ClassBinaryEnv.h
         ../params.json
 )
 # Add GEGELATI and CMAKE_SOURCE_DIR
@@ -101,10 +101,10 @@ target_compile_definitions(${BINARYTPG_EXE_NAME} PRIVATE ROOT_DIR="${CMAKE_SOURC
 set(INFERENCE_BINARY_TPG_EXE_NAME ${PROJECT_NAME}_inferenceBinary)
 add_executable(${INFERENCE_BINARY_TPG_EXE_NAME}
         ../src/binary/inferenceBinaryTPGs.cpp
-        ../src/binary/defaultBinaryEnv.cpp
-        ../include/binary/defaultBinaryEnv.h
-        ../src/binary/classBinaryEnv.cpp
-        ../include/binary/classBinaryEnv.h
+        ../src/binary/DefaultBinaryEnv.cpp
+        ../include/binary/DefaultBinaryEnv.h
+        ../src/binary/ClassBinaryEnv.cpp
+        ../include/binary/ClassBinaryEnv.h
         )
 # Add GEGELATI and CMAKE_SOURCE_DIR
 target_link_libraries(${INFERENCE_BINARY_TPG_EXE_NAME} ${GEGELATI_LIBRARIES})

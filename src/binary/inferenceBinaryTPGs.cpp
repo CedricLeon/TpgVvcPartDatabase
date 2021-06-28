@@ -5,8 +5,8 @@
 
 #include <gegelati.h>
 
-#include "../../include/binary/defaultBinaryEnv.h"
-#include "../../include/binary/classBinaryEnv.h"
+#include "../../include/binary/DefaultBinaryEnv.h"
+#include "../../include/binary/ClassBinaryEnv.h"
 
 void importTPG(BinaryClassifEnv* le, Environment& env, TPG::TPGGraph& tpg);
 Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(const char datasetPath[100], BinaryClassifEnv* le, std::vector<uint8_t>* splitList, uint64_t index_targ);

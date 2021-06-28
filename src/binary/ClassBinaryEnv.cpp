@@ -1,72 +1,57 @@
+#include "../../include/binary/ClassBinaryEnv.h"
 #include <vector>
-#include <iomanip>
-
-#include "../../include/binary/defaultBinaryEnv.h"
 
 // ********************************************************************* //
 // ************************** GEGELATI FUNCTIONS *********************** //
 // ********************************************************************* //
 
-void BinaryDefaultEnv::doAction(uint64_t actionID)
+void BinaryClassifEnv::doAction(uint64_t actionID)
 {
     // Managing the reward (+1 if the best split is chosen, else +0)
-    if(actionID == this->optimal_split)
-        this->score++;
-
-    /*if(actionID == this->optimal_split)
-    {
-        if(actionID == 0)
-            this->score += 0.2;
-        else if(actionID == 1)
-            this->score += 1;
-        else
-            std::cout << "ComputingScore : Wrong use of binary TPG. ActionID not in action range." << std::endl;
-    }*/
+    ClassificationLearningEnvironment::doAction(actionID);
 
     // Loading next CU
     this->LoadNextCU();
 }
 
-std::vector<std::reference_wrapper<const Data::DataHandler>> BinaryDefaultEnv::getDataSources()
+std::vector<std::reference_wrapper<const Data::DataHandler>> BinaryClassifEnv::getDataSources()
 {
     // Return a vector containing every element constituting the State of the environment
     std::vector<std::reference_wrapper<const Data::DataHandler>> result{this->currentCU};
     return result;
 }
 
-void BinaryDefaultEnv::reset(size_t seed, Learn::LearningMode mode)
+void BinaryClassifEnv::reset(size_t seed, Learn::LearningMode mode)
 {
+    // Reset the classificationTable and the score
+    ClassificationLearningEnvironment::reset(seed);
+
     // Update the LearningMode
     this->currentMode = mode;
 
-    // Reset the score
-    this->score = 0.0;
-
-    // RNG Control : Create seed from seed and mode
-    size_t hash_seed = Data::Hash<size_t>()(seed) ^Data::Hash<Learn::LearningMode>()(mode);
     // Reset the RNG
-    this->rng.setSeed(hash_seed);
+    this->rng.setSeed(seed);
 
     // Preload the first CU (depending on the current mode)
     this->LoadNextCU();
 }
 
-Learn::LearningEnvironment *BinaryDefaultEnv::clone() const
+Learn::LearningEnvironment *BinaryClassifEnv::clone() const
 {
-    return new BinaryDefaultEnv(*this);
+    return new BinaryClassifEnv(*this);
 }
 
-bool BinaryDefaultEnv::isCopyable() const
+bool BinaryClassifEnv::isCopyable() const
 {
     return true; // false : to avoid ParallelLearning (Cf. LearningAgent)
 }
 
-double BinaryDefaultEnv::getScore() const
+double BinaryClassifEnv::getScore() const
 {
-    return this->score;
+    return ClassificationLearningEnvironment::getScore();
 }
 
-bool BinaryDefaultEnv::isTerminal() const
+bool BinaryClassifEnv::isTerminal() const
 {
     return false;
 }
@@ -77,17 +62,17 @@ bool BinaryDefaultEnv::isTerminal() const
 // ********************************************************************* //
 
 // ****** TRAINING Arguments ******
-std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *BinaryDefaultEnv::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
-std::vector<uint8_t> *BinaryDefaultEnv::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
+std::vector<Data::PrimitiveTypeArray2D<uint8_t> *> *BinaryClassifEnv::trainingTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
+std::vector<uint8_t> *BinaryClassifEnv::trainingTargetsOptimalSplits = new std::vector<uint8_t>;
 // ****** VALIDATION Arguments ******
-std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *BinaryDefaultEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
-std::vector<uint8_t> *BinaryDefaultEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
+std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *BinaryClassifEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;
+std::vector<uint8_t> *BinaryClassifEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray2D<uint8_t> *BinaryDefaultEnv::getRandomCU(Learn::LearningMode mode, const char current_CU_path[100])
+Data::PrimitiveTypeArray2D<uint8_t> *BinaryClassifEnv::getRandomCU(Learn::LearningMode mode, const char current_CU_path[100])
 {
     // ------------------ Opening and Reading a random CU file ------------------
     // Generate the path for a random CU
-    uint32_t next_CU_number = this->rng.getInt32(0, (int) NB_TRAINING_ELEMENTS - 1);
+    uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
     char CU_path[100];
@@ -122,14 +107,14 @@ Data::PrimitiveTypeArray2D<uint8_t> *BinaryDefaultEnv::getRandomCU(Learn::Learni
 
     // Updating the corresponding optimal split depending of the current mode
     if (mode == Learn::LearningMode::TRAINING)
-        BinaryDefaultEnv::trainingTargetsOptimalSplits->push_back(contents[1024]);
+        BinaryClassifEnv::trainingTargetsOptimalSplits->push_back(contents[1024]);
     else if (mode == Learn::LearningMode::VALIDATION)
-        BinaryDefaultEnv::validationTargetsOptimalSplits->push_back(contents[1024]);
+        BinaryClassifEnv::validationTargetsOptimalSplits->push_back(contents[1024]);
 
     return randomCU;
 }
 
-void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_CU_path[100])
+void BinaryClassifEnv::UpdatingTargets(uint64_t currentGen, const char current_CU_path[100])
 {
     // Each ${nbGeneTargetChange} generation, generate new random training targets so that different targets are used
     if (currentGen % NB_GENERATION_BEFORE_TARGETS_CHANGE == 0)
@@ -139,9 +124,9 @@ void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         {
             this->reset(0, Learn::LearningMode::TRAINING);
             for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
-                delete BinaryDefaultEnv::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
-            BinaryDefaultEnv::trainingTargetsCU->clear();
-            BinaryDefaultEnv::trainingTargetsOptimalSplits->clear();
+                delete BinaryClassifEnv::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
+            BinaryClassifEnv::trainingTargetsCU->clear();
+            BinaryClassifEnv::trainingTargetsOptimalSplits->clear();
             this->actualTrainingCU = 0;
         }
         else        // Load VALIDATION Targets at the beginning of the training (i == 0)
@@ -149,7 +134,7 @@ void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_C
             for (uint64_t idx_targ = 0; idx_targ < NB_VALIDATION_TARGETS; idx_targ++)
             {
                 Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::VALIDATION, current_CU_path);
-                BinaryDefaultEnv::validationTargetsCU->push_back(target);
+                BinaryClassifEnv::validationTargetsCU->push_back(target);
             }
         }
 
@@ -157,23 +142,23 @@ void BinaryDefaultEnv::UpdatingTargets(uint64_t currentGen, const char current_C
         for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
         {
             Data::PrimitiveTypeArray2D<uint8_t>* target = this->getRandomCU(Learn::LearningMode::TRAINING, current_CU_path);
-            BinaryDefaultEnv::trainingTargetsCU->push_back(target);
+            BinaryClassifEnv::trainingTargetsCU->push_back(target);
             // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
         }
     }
 }
 
-void BinaryDefaultEnv::LoadNextCU()
+void BinaryClassifEnv::LoadNextCU()
 {
     // Checking validity is no longer necessary
     if (this->currentMode == Learn::LearningMode::TRAINING)
     {
-        this->currentCU = *BinaryDefaultEnv::trainingTargetsCU->at(this->actualTrainingCU);
+        this->currentCU = *BinaryClassifEnv::trainingTargetsCU->at(this->actualTrainingCU);
 
         // Updating next split solution :
         //   -  If the optimal split is not the specialized action, the optimal split is set to 0
         //   -  Else the optimal split is set to 1
-        this->optimal_split = BinaryDefaultEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU) != this->specializedAction ? 0 : 1;
+        this->currentClass = (BinaryClassifEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU) != this->specializedAction) ? 0 : 1;
         this->actualTrainingCU++;
 
         // Looping on the beginning of training targets
@@ -182,12 +167,12 @@ void BinaryDefaultEnv::LoadNextCU()
     }
     else if (this->currentMode == Learn::LearningMode::VALIDATION)
     {
-        this->currentCU = *BinaryDefaultEnv::validationTargetsCU->at(this->actualValidationCU);
+        this->currentCU = *BinaryClassifEnv::validationTargetsCU->at(this->actualValidationCU);
 
         // Updating next split solution :
         //   -  If the optimal split is not the specialized action, the optimal split is set to 0
         //   -  Else the optimal split is set to 1
-        this->optimal_split = BinaryDefaultEnv::validationTargetsOptimalSplits->at(this->actualValidationCU) != this->specializedAction ? 0 : 1;
+        this->currentClass = (BinaryClassifEnv::validationTargetsOptimalSplits->at(this->actualValidationCU) != this->specializedAction) ? 0 : 1;
         this->actualValidationCU++;
 
         // Looping on the beginning of validation targets
@@ -196,7 +181,7 @@ void BinaryDefaultEnv::LoadNextCU()
     }
 }
 
-void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile, bool readable)
+void BinaryClassifEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const& outputFile, bool readable)
 {
     // Create a new TPGExecutionEngine from the environment
     TPG::TPGExecutionEngine tee(env, nullptr);
@@ -214,7 +199,7 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
     for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
     {
         // Get answer
-        uint64_t optimalActionID = this->optimal_split;
+        uint64_t optimalActionID = this->currentClass;
         nbPerClass[optimalActionID]++;
 
         // std::cout << optimalActionID << " : " << nbPerClass[optimalActionID] << std::endl;
@@ -234,14 +219,14 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
     // Reset the learning mode to TESTING
     this->reset(0, Learn::LearningMode::TESTING);
 
-    // Computing Score
+    // Computing Score and ScoreMax
     double validationScore = 0.0;
-    validationScore += ((double) classifTable[0][0]);
-    validationScore += (double) classifTable[1][1];
-    // Computing ScoreMax :
     double scoreMax = 0.0;
-    scoreMax += ((double) nbPerClass[0]);
-    scoreMax += (double) nbPerClass[1];
+    for (int i = 0; i < nbClasses; i++)
+    {
+        validationScore += ((double) classifTable[i][i]);
+        scoreMax += ((double) nbPerClass[i]);
+    }
 
     // What is the specialized action ?
     std::string speActionName = this->getActionName(this->specializedAction);
@@ -256,9 +241,11 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
         if (file)
         {
             file << "-------------------------------------------------" << std::endl;
-            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << validationScore / scoreMax * 100 << "  ("
+            double otherNorm = (double) classifTable[0][0] / (double) nbPerClass[0] * 100;
+            double actNorm = (double) classifTable[1][1] / (double) nbPerClass[1] * 100;
+            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << (otherNorm + actNorm) / 2 << "  ("
                  << validationScore << "/" << scoreMax << ")" << std::endl;
-            file << "  OTHER    " << speActionName << "  Nb  |     OTHER      " << speActionName << "    Nb" << std::endl;
+            file << "  OTHER    " << speActionName << "  Nb  |     OTHER     " << speActionName << "    Nb" << std::endl;
 
             for (int x = 0; x < nbClasses; x++)
             {
@@ -305,7 +292,7 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
             file << std::setw(4) << numGen << "   ";
             file << std::fixed << std::setprecision(2) << otherNorm << "  ";
             file << actNorm << "  ";
-            file << validationScore / scoreMax * 100 << std::endl;
+            file << (otherNorm + actNorm) / 2 << std::endl;
             file.close();
         } else
         {
@@ -314,7 +301,7 @@ void BinaryDefaultEnv::printClassifStatsTable(const Environment& env, const TPG:
     }
 }
 
-std::string BinaryDefaultEnv::getActionName(uint64_t speAct)
+std::string BinaryClassifEnv::getActionName(uint64_t speAct)
 {
     std::string speActionName("???");
     switch(speAct)
@@ -344,9 +331,8 @@ std::string BinaryDefaultEnv::getActionName(uint64_t speAct)
     return speActionName;
 }
 
-int BinaryDefaultEnv::getSpecializedAction() const { return specializedAction; }
-uint8_t BinaryDefaultEnv::getOptimalSplit()  const { return optimal_split; }
-Mutator::RNG BinaryDefaultEnv::getRng() const { return rng; }
+int BinaryClassifEnv::getSpecializedAction() const { return specializedAction; }
+Mutator::RNG BinaryClassifEnv::getRng() const { return rng; }
+uint8_t BinaryClassifEnv::getOptimalSplit() const { return this->currentClass; }
 
-void BinaryDefaultEnv::setCurrentMode(Learn::LearningMode mode) { BinaryDefaultEnv::currentMode = mode; }
-void BinaryDefaultEnv::setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu) { currentCU = currentCu; }
+void BinaryClassifEnv::setCurrentCu(const Data::PrimitiveTypeArray2D<uint8_t> &currentCu) { currentCU = currentCu; }
