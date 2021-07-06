@@ -9,10 +9,20 @@
 
 void ParseStringInVector(std::vector<uint8_t>& actions, std::string str)
 {
+    // This condition below is not necessary in normal execution conditions
+    // But when calling the executable from a script, bash force the extern quotes as part of the string
+    // Which fucked up the whole process below. So we erase these quotes when necessary
+    if(str[0] == '"' && str[str.size() - 1] == '"')
+    {
+        str.erase(0, 1);
+        str.erase(str.size() - 1);
+    }
+
     // Remove first ('{') and last char ('}') from str
+    //std::cout << str.size() << " : |" << str << "|" << std::endl;
     str.erase(0, 1);
     str.erase(str.size() - 1);
-    //std::cout << str.size() << " : \"" << str << "\"" << std::endl;
+    //std::cout << str.size() << " : |" << str << "|" << std::endl;
 
     if (str.size() == 1)
         actions.push_back((uint8_t) atoi(str.c_str()));
@@ -28,6 +38,7 @@ void ParseStringInVector(std::vector<uint8_t>& actions, std::string str)
 
             actions.push_back((uint8_t) nb);
             str.erase(0,2);
+            //std::cout << str.size() << " : |" << str << "|" << std::endl;
         }
     }
 }
@@ -45,10 +56,12 @@ int main(int argc, char* argv[])
     uint64_t cuHeight = 32;
     uint64_t cuWidth = 32;
     uint64_t nbFeatures = 112;
-    uint64_t nbDatabaseElements = 114348*6; // 32x32_balanced database
+    uint64_t nbDatabaseElements = 100000; // binary balanced databases
+    std::string actName = "NP";
+    //114348*6 : 32x32_balanced database
 
     //std::cout << "argc: " << argc << std::endl;
-    if (argc == 8)
+    if (argc == 9)
     {
         actions0.clear(); actions1.clear();
         ParseStringInVector(actions0, (std::string) argv[1]);
@@ -58,6 +71,7 @@ int main(int argc, char* argv[])
         cuWidth = atoi(argv[5]);
         nbFeatures = atoi(argv[6]);
         nbDatabaseElements = atoi(argv[7]);
+        actName = argv[8];
     }
     else
     {
@@ -65,16 +79,18 @@ int main(int argc, char* argv[])
         std::cout << "Example : \"./TPGVVCPartDatabase_binaryFeaturesEnv {0} {1,2,3,4,5} 0 32 32 112 686088\"" << std::endl ;
     }
     std::cout << std::endl << "---------- Main arguments ----------" << std::endl;
+    //std::cout << "argv[1]: " << argv[1] << ", argv[2]: " << argv[2] << std::endl;
     std::cout << std::setw(13) << "actions0 :";
     for (auto &act : actions0)
         std::cout << std::setw(4) << (int) act;
     std::cout << std::endl << std::setw(13) << "actions1 :";
     for (auto &act : actions1)
         std::cout << std::setw(4) << (int) act;
-    std::cout << std::endl << std::setw(13) << "seed :" << std::setw(3) << seed << std::endl;
-    std::cout << std::setw(13) << "cuHeight :" << std::setw(4) << cuHeight << std::endl;
-    std::cout << std::setw(13) << "cuWidth :" << std::setw(4) << cuWidth << std::endl;
-    std::cout << std::setw(13) << "nbFeatures :" << std::setw(4) << nbFeatures << std::endl;
+    std::cout << std::endl << std::setw(13) << "seed :" << " " << std::setw(3) << seed << std::endl;
+    std::cout << std::setw(13) << "cuHeight :" << " " << std::setw(4) << cuHeight << std::endl;
+    std::cout << std::setw(13) << "cuWidth :" << " " << std::setw(4) << cuWidth << std::endl;
+    std::cout << std::setw(13) << "nbFeatures :" << " " << std::setw(4) << nbFeatures << std::endl;
+    std::cout << std::setw(13) << "actName :" << " " << std::setw(4) << actName << std::endl;
 
     std::cout << std::endl << "Start the training of a TPG based on CU features extraction (CNN)" << std::endl;
 
@@ -145,8 +161,15 @@ int main(int argc, char* argv[])
     // "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/" || "/home/cleonard/Data/features/"
     std::string datasetBasePath = "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/";
     std::string datasetMiddlePath = "x";
-    std::string datasetEndPath = "_balanced/";
-    std::string datasetPath = datasetBasePath + std::to_string(LE->getCuHeight()) + datasetMiddlePath + std::to_string(LE->getCuWidth()) + datasetEndPath;
+    std::string datasetType = "_perso/";
+    std::string datasetEndPath = "/";
+    std::string datasetPath = datasetBasePath
+                            + std::to_string(LE->getCuHeight())
+                            + datasetMiddlePath
+                            + std::to_string(LE->getCuWidth())
+                            + datasetType
+                            + actName
+                            + datasetEndPath;
     std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTable.txt");
     std::string const fullConfusionMatrixName("/home/cleonard/dev/TpgVvcPartDatabase/fullClassifTable.txt");
 

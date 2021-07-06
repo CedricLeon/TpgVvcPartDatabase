@@ -9,6 +9,23 @@
 
 void importTPG(BinaryFeaturesEnv* le, Environment& env, TPG::TPGGraph& tpg);
 Data::PrimitiveTypeArray<double>* getRandomCUFeatures(std::string& datasetPath, BinaryFeaturesEnv* le, std::vector<uint8_t>* splitList);
+uint64_t EvaluateLinearWaterFall(BinaryFeaturesEnv* leNP,
+                                 TPG::TPGExecutionEngine teeNP,
+                                 const TPG::TPGVertex* rootNP,
+                                 BinaryFeaturesEnv* leQT,
+                                 TPG::TPGExecutionEngine teeQT,
+                                 const TPG::TPGVertex* rootQT,
+                                 BinaryFeaturesEnv* leBTH,
+                                 TPG::TPGExecutionEngine teeBTH,
+                                 const TPG::TPGVertex* rootBTH,
+                                 BinaryFeaturesEnv* leBTV,
+                                 TPG::TPGExecutionEngine teeBTV,
+                                 const TPG::TPGVertex* rootBTV,
+                                 BinaryFeaturesEnv* leTTH,
+                                 TPG::TPGExecutionEngine teeTTH,
+                                 const TPG::TPGVertex* rootTTH,
+                                 std::vector<Data::PrimitiveTypeArray<double> *>& dataHandler,
+                                 std::vector<uint8_t>& splitList);
 
 int main()
 {
@@ -61,23 +78,14 @@ int main()
         File::ParametersParser::loadParametersFromJson(ROOT_DIR "/TPG/params.json", params);
 
         // Default arguments
-        std::vector<uint8_t> actions0 = {0};
-        std::vector<uint8_t> actions1 = {1,2,3,4,5};
         size_t seed = 0;
         uint64_t cuHeight = 32;
         uint64_t cuWidth = 32;
         uint64_t nbFeatures = 112;
         uint64_t nbDatabaseElements = 114348*6; // 32x32_balanced database
-
-        // Initialising the number of CUs used
-        //uint64_t nbDatabaseElements = 686088;   // Balanced database with 55000 elements of one class and 11000 elements of each other class : 110000
-        // Balanced database with full classes : 330000
-        // Unbalanced database : 1136424
-        // Number of CUs preload changed every nbGeneTargetChange generation for training and load only once for validation
         uint64_t nbTrainingTargets = 10000;
         uint64_t nbGeneTargetChange = 30;
         uint64_t nbValidationTarget = 1000;
-
 
         // ************************************************** INSTANCES *************************************************
 
@@ -86,13 +94,13 @@ int main()
         // And therefore, each of the following object (Environment, TPGGraph, Engine, ...) depends on the learningEnvironment. So, 6 of each.
         auto *leNP = new BinaryFeaturesEnv({0}, {1,2,3,4,5}, seed, cuHeight, cuWidth, nbFeatures,
                                            nbDatabaseElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget);
-        auto *leQT = new BinaryFeaturesEnv({1}, {0,2,3,4,5}, seed, cuHeight, cuWidth, nbFeatures,
+        auto *leQT = new BinaryFeaturesEnv({1}, {2,3,4,5}, seed, cuHeight, cuWidth, nbFeatures,
                                            nbDatabaseElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget);
-        auto *leBTH = new BinaryFeaturesEnv({2}, {0,1,3,4,5}, seed, cuHeight, cuWidth, nbFeatures,
+        auto *leBTH = new BinaryFeaturesEnv({2}, {3,4,5}, seed, cuHeight, cuWidth, nbFeatures,
                                             nbDatabaseElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget);
-        auto *leBTV = new BinaryFeaturesEnv({3}, {0,1,2,4,5}, seed, cuHeight, cuWidth, nbFeatures,
+        auto *leBTV = new BinaryFeaturesEnv({3}, {4,5}, seed, cuHeight, cuWidth, nbFeatures,
                                             nbDatabaseElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget);
-        auto *leTTH = new BinaryFeaturesEnv({4}, {0,1,2,3,5}, seed, cuHeight, cuWidth, nbFeatures,
+        auto *leTTH = new BinaryFeaturesEnv({4}, {5}, seed, cuHeight, cuWidth, nbFeatures,
                                             nbDatabaseElements, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget);
 
         // Instantiate the environment that will embed the LearningEnvironment
@@ -135,21 +143,27 @@ int main()
         std::string datasetBasePath = "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/";
         std::string datasetMiddlePath = "x";
         std::string datasetEndPath = "_balanced/";
-        std::string datasetPath = datasetBasePath + std::to_string(leNP->getCuHeight()) + datasetMiddlePath + std::to_string(leNP->getCuWidth()) + datasetEndPath;
+        std::string datasetPath = datasetBasePath
+                                + std::to_string(leNP->getCuHeight())
+                                + datasetMiddlePath
+                                + std::to_string(leNP->getCuWidth())
+                                + datasetEndPath;
 
 
         auto *dataHandler = new std::vector<Data::PrimitiveTypeArray<double> *>;
         auto *splitList = new std::vector<uint8_t>;
+        auto *CUchosen = new std::vector<int>{0,0,0,0,0,0};
+        auto *CUset = new std::vector<int>{0,0,0,0,0,0};
 
         // Load a vector of 1000 CUs (dataHandler) and their corresponding split (splitList)
         // -------------------------- Load a global vector of 1.000 CUs --------------------------
-        for (uint64_t idx_targ = 0; idx_targ < leNP->NB_VALIDATION_TARGETS; idx_targ++) {
+        for (uint64_t idx_targ = 0; idx_targ < leNP->NB_VALIDATION_TARGETS; idx_targ++)
+        {
             Data::PrimitiveTypeArray<double> *target = getRandomCUFeatures(datasetPath, leNP, splitList);
             dataHandler->push_back(target);
             // Optimal split is stored in splitList inside getRandomCU()
         }
 
-        // -------------------------- Load next CU for all TPG --------------------------
         uint64_t score = 0;
         int actionID;
         int chosenAction = -1;
@@ -164,43 +178,46 @@ int main()
             leBTV->setCurrentState(*dataHandler->at(nbCU));
             leTTH->setCurrentState(*dataHandler->at(nbCU));
 
-            // ************************************** ORDER : NP QT BTH BTV TTH ***************************************
+            // ************************************ ORDER : NP QT DIREC HORI VERTI *************************************
             // -------------------------- Call NP TPG --------------------------
             actionID = (int) ((const TPG::TPGAction *) teeNP.executeFromRoot(* rootNP).back())->getActionID();
             //std::cout << "NP Action : " << actionID << std::endl;
-            if(actionID == 1)
-                chosenAction = leNP->getActions0().at(0);
+            if(actionID == 0)
+                chosenAction = 0; //leNP->getActions0().at(0);
             else
             {
                 // -------------------------- Call QT TPG --------------------------
                 actionID = (int) ((const TPG::TPGAction *) teeQT.executeFromRoot(* rootQT).back())->getActionID();
                 //std::cout << "QT Action : " << actionID << std::endl;
-                if(actionID == 1)
-                    chosenAction = leQT->getActions0().at(0);
+                if(actionID == 0)
+                    chosenAction = 1; //leQT->getActions0().at(0);
                 else
                 {
-                    // -------------------------- Call BTH TPG --------------------------
+                    // -------------------------- Call DIREC TPG --------------------------
                     actionID = (int) ((const TPG::TPGAction *) teeBTH.executeFromRoot(* rootBTH).back())->getActionID();
                     //std::cout << "BTH Action : " << actionID << std::endl;
-                    if(actionID == 1)
-                        chosenAction = leBTH->getActions0().at(0);
+                    if(actionID == 0)
+                    {
+                        // -------------------------- Call HORI TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
+                        //std::cout << "HORI Action : " << actionID << std::endl;
+                        if(actionID == 0)
+                            chosenAction = 2; //leBTV->getActions0().at(0);
+                        else
+                            chosenAction = 4; //leBTV->getActions1().at(0);
+                         // HORI
+                    }
                     else
                     {
-                        // -------------------------- Call BTV TPG --------------------------
-                        actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
-                        //std::cout << "BTV Action : " << actionID << std::endl;
-                        if(actionID == 1)
-                            chosenAction = leBTV->getActions0().at(0);
+                        // -------------------------- Call VERTI TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
+                        //std::cout << "VERTI Action : " << actionID << std::endl;
+                        if(actionID == 0)
+                            chosenAction = 3; //leTTH->getActions0().at(0);
                         else
-                        {
-                            // -------------------------- Call TTH TPG --------------------------
-                            actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
-                            //std::cout << "TTH Action : " << actionID << std::endl;
-                            if(actionID == 1)
-                                chosenAction = leTTH->getActions0().at(0);
-                             // TTH
-                        } // BTV
-                    } // BTH
+                            chosenAction = 5; //leTTH->getActions1().at(0);
+                         // VERTI
+                    } // DIREC
                 } // QT
             } // NP
 
@@ -208,10 +225,90 @@ int main()
             //std::cout << "Action : " << chosenAction << ", real Split : " << (int) splitList->at(nbCU) << std::endl;
             if (chosenAction == (int) splitList->at(nbCU))
                 score++;
-
-            //std::cout << "TPG: " << actionID << " Sol: " << (uint64_t) le->getOptimalSplit() << std::endl;
+            CUchosen->at(chosenAction) ++;
+            CUset->at((int) splitList->at(nbCU)) ++;
         }
-        std::cout << "Score : " << score << "/" << leNP->NB_VALIDATION_TARGETS << std::endl;
+
+        /*// Run NB_VALIDATION_TARGETS times the TPG, each time on a different CU
+        for (uint64_t nbCU = 0; nbCU < leNP->NB_VALIDATION_TARGETS; nbCU++)
+        {
+            // -------------------------- Load next CU for all TPGs --------------------------
+            leNP->setCurrentState(*dataHandler->at(nbCU));
+            leQT->setCurrentState(*dataHandler->at(nbCU));
+            leBTH->setCurrentState(*dataHandler->at(nbCU));
+            leBTV->setCurrentState(*dataHandler->at(nbCU));
+            leTTH->setCurrentState(*dataHandler->at(nbCU));
+
+            // ************************************** ORDER : NP QT BTH BTV TTH ****************************************
+            // -------------------------- Call NP TPG --------------------------
+            actionID = (int) ((const TPG::TPGAction *) teeNP.executeFromRoot(* rootNP).back())->getActionID();
+            //std::cout << "NP Action : " << actionID << std::endl;
+            if(actionID == 0)
+                chosenAction = leNP->getActions0().at(0);
+            else
+            {
+                // -------------------------- Call QT TPG --------------------------
+                actionID = (int) ((const TPG::TPGAction *) teeQT.executeFromRoot(* rootQT).back())->getActionID();
+                //std::cout << "QT Action : " << actionID << std::endl;
+                if(actionID == 0)
+                    chosenAction = leQT->getActions0().at(0);
+                else
+                {
+                    // -------------------------- Call BTH TPG --------------------------
+                    actionID = (int) ((const TPG::TPGAction *) teeBTH.executeFromRoot(* rootBTH).back())->getActionID();
+                    //std::cout << "BTH Action : " << actionID << std::endl;
+                    if(actionID == 0)
+                        chosenAction = leBTH->getActions0().at(0);
+                    else
+                    {
+                        // -------------------------- Call BTV TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
+                        //std::cout << "BTV Action : " << actionID << std::endl;
+                        if(actionID == 0)
+                            chosenAction = leBTV->getActions0().at(0);
+                        else
+                        {
+                            // -------------------------- Call TTH TPG --------------------------
+                            actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
+                            //std::cout << "TTH Action : " << actionID << std::endl;
+                            if(actionID == 0)
+                                chosenAction = leTTH->getActions0().at(0);
+                            // TTH
+                        } // BTV
+                    } // BTH
+                } // QT
+            } // NP
+
+            // -------------------------- Update Score --------------------------
+            std::cout << "Action : " << chosenAction << ", real Split : " << (int) splitList->at(nbCU) << std::endl;
+            if (chosenAction == (int) splitList->at(nbCU))
+                score++;
+        }*/
+
+/*        // -------------------------- Load next CU for all TPG --------------------------
+        uint64_t scoreFct = EvaluateLinearWaterFall(leNP, teeNP, rootNP,
+                                                 leQT, teeQT, rootQT,
+                                                 leBTH, teeBTH, rootBTH,
+                                                 leBTV, teeBTV, rootBTV,
+                                                 leTTH, teeTTH, rootTTH,
+                                                 *dataHandler,
+                                                 *splitList);*/
+
+        std::cout << "Score : " << score << "/" << leNP->NB_VALIDATION_TARGETS << ", CU set : ["
+                  << CUset->at(0) << ", "
+                  << CUset->at(1) << ", "
+                  << CUset->at(2) << ", "
+                  << CUset->at(3) << ", "
+                  << CUset->at(4) << ", "
+                  << CUset->at(5) << "], CU chosen : ["
+                  << CUchosen->at(0) << ", "
+                  << CUchosen->at(1) << ", "
+                  << CUchosen->at(2) << ", "
+                  << CUchosen->at(3) << ", "
+                  << CUchosen->at(4) << ", "
+                  << CUchosen->at(5) << "]"
+                  << std::endl;
+        //std::cout << "  ScoreFct : " << scoreFct << "/" << leNP->NB_VALIDATION_TARGETS << std::endl;
         moyenne += (double) score;
 
         // ---------------- Clean ----------------
@@ -227,10 +324,93 @@ int main()
         // Data and solution handlers
         delete dataHandler;
         delete splitList;
+        delete CUchosen;
+        delete CUset;
     }
     moyenne /= nbEval;
     std::cout << "Score moyen : " << moyenne << "/1000" << std::endl;
     return 0;
+}
+
+
+uint64_t EvaluateLinearWaterFall(BinaryFeaturesEnv* leNP,
+                                 TPG::TPGExecutionEngine teeNP,
+                                 const TPG::TPGVertex* rootNP,
+                                 BinaryFeaturesEnv* leQT,
+                                 TPG::TPGExecutionEngine teeQT,
+                                 const TPG::TPGVertex* rootQT,
+                                 BinaryFeaturesEnv* leBTH,
+                                 TPG::TPGExecutionEngine teeBTH,
+                                 const TPG::TPGVertex* rootBTH,
+                                 BinaryFeaturesEnv* leBTV,
+                                 TPG::TPGExecutionEngine teeBTV,
+                                 const TPG::TPGVertex* rootBTV,
+                                 BinaryFeaturesEnv* leTTH,
+                                 TPG::TPGExecutionEngine teeTTH,
+                                 const TPG::TPGVertex* rootTTH,
+                                 std::vector<Data::PrimitiveTypeArray<double> *>& dataHandler,
+                                 std::vector<uint8_t>& splitList)
+{
+    uint64_t score = 0;
+    int actionID;
+    int chosenAction = -1;
+
+    // Run NB_VALIDATION_TARGETS times the TPG, each time on a different CU
+    for (uint64_t nbCU = 0; nbCU < leNP->NB_VALIDATION_TARGETS; nbCU++)
+    {
+        // -------------------------- Load next CU for all TPGs --------------------------
+        leNP->setCurrentState(*dataHandler.at(nbCU));
+        leQT->setCurrentState(*dataHandler.at(nbCU));
+        leBTH->setCurrentState(*dataHandler.at(nbCU));
+        leBTV->setCurrentState(*dataHandler.at(nbCU));
+        leTTH->setCurrentState(*dataHandler.at(nbCU));
+
+        // ************************************** ORDER : NP QT BTH BTV TTH ***************************************
+        // -------------------------- Call NP TPG --------------------------
+        actionID = (int) ((const TPG::TPGAction *) teeNP.executeFromRoot(* rootNP).back())->getActionID();
+        //std::cout << "NP Action : " << actionID << std::endl;
+        if(actionID == 0)
+            chosenAction = leNP->getActions0().at(0);
+        else
+        {
+            // -------------------------- Call QT TPG --------------------------
+            actionID = (int) ((const TPG::TPGAction *) teeQT.executeFromRoot(* rootQT).back())->getActionID();
+            //std::cout << "QT Action : " << actionID << std::endl;
+            if(actionID == 0)
+                chosenAction = leQT->getActions0().at(0);
+            else
+            {
+                // -------------------------- Call BTH TPG --------------------------
+                actionID = (int) ((const TPG::TPGAction *) teeBTH.executeFromRoot(* rootBTH).back())->getActionID();
+                //std::cout << "BTH Action : " << actionID << std::endl;
+                if(actionID == 0)
+                    chosenAction = leBTH->getActions0().at(0);
+                else
+                {
+                    // -------------------------- Call BTV TPG --------------------------
+                    actionID = (int) ((const TPG::TPGAction *) teeBTV.executeFromRoot(* rootBTV).back())->getActionID();
+                    //std::cout << "BTV Action : " << actionID << std::endl;
+                    if(actionID == 0)
+                        chosenAction = leBTV->getActions0().at(0);
+                    else
+                    {
+                        // -------------------------- Call TTH TPG --------------------------
+                        actionID = (int) ((const TPG::TPGAction *) teeTTH.executeFromRoot(* rootTTH).back())->getActionID();
+                        //std::cout << "TTH Action : " << actionID << std::endl;
+                        if(actionID == 0)
+                            chosenAction = leTTH->getActions0().at(0);
+                        // TTH
+                    } // BTV
+                } // BTH
+            } // QT
+        } // NP
+
+        // -------------------------- Update Score --------------------------
+        std::cout << "Action : " << chosenAction << ", real Split : " << (int) splitList.at(nbCU) << std::endl;
+        if (chosenAction == (int) splitList.at(nbCU))
+            score++;
+    }
+    return score;
 }
 
 void importTPG(BinaryFeaturesEnv* le, Environment& env, TPG::TPGGraph& tpg)

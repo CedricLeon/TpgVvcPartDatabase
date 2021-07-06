@@ -1,8 +1,4 @@
 #include <iostream>
-#include <fstream>
-
-//#define _USE_MATH_DEFINES // To get M_PI
-
 #include <cmath>
 #include <thread>
 #include <atomic>
@@ -47,6 +43,7 @@ int main()
     std::cout << "Start VVC Partitionning with TPG application." << std::endl;
 
     // Create the instruction set for programs
+    // uint8_t
     Instructions::Set set;
     auto minus = [](uint8_t a, uint8_t b)->double {return a - b; };
     auto add   = [](uint8_t a, uint8_t b)->double {return a + b; };
@@ -55,6 +52,7 @@ int main()
     auto max   = [](uint8_t a, uint8_t b)->double {return std::max(a, b); };
     auto multByConst = [](uint8_t a, Data::Constant c)->double {return a * (double)c; };
 
+    // double
     auto minus_double = [](double a, double b)->double {return a - b; };
     auto add_double   = [](double a, double b)->double {return a + b; };
     auto mult_double  = [](double a, double b)->double {return a * b; };
@@ -72,16 +70,6 @@ int main()
         }
         return res;
     };
-
-    // Convolution (3x3) :
-    // - Tableaux de data (2D, cf exemples dans MNIST)
-    // - changer dans main (sobelMagn), elle prend un tableau de 3x3
-    // - dans le LE, le datasource doit être un primitive type array 2D (Cf MNIST)
-    // - ajouter un 2eme paramètre qui précise le nombre de constantes pour la convolution
-
-    // Je pense que le 'Constant[3][3]' ne fonctionnera pas, car le DataHandler qui fournit les constantes est un Array1D.
-    // Tu peux utiliser un 'Constant[9]' à la place. (Et n'oublie pas de mettre au moins 9 constantes dans param.json)
-
     // Add those instructions to instruction set
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(add)));
