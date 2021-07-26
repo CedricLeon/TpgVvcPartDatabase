@@ -45,9 +45,8 @@ void ParseStringInVector(std::vector<uint8_t>& actions, std::string str)
 
 int main(int argc, char* argv[])
 {
+    std::cout << "Start TPGVVCPartDatabase : training a binary (2 actions) TPG based on CU features extraction (CNN)." << std::endl;
     // ******************************************* MAIN ARGUMENTS EXTRACTION *******************************************
-
-    // Example : "./TPGVVCPartDatabase_binaryFeaturesEnv {0} {1,2,3,4,5} 0 32 32 112 686088"
 
     // Default arguments
     std::vector<uint8_t> actions0 = {0};
@@ -56,12 +55,16 @@ int main(int argc, char* argv[])
     uint64_t cuHeight = 32;
     uint64_t cuWidth = 32;
     uint64_t nbFeatures = 112;
-    uint64_t nbDatabaseElements = 100000; // binary balanced databases
-    std::string actName = "NP";
+    uint64_t nbDatabaseElements = 114348*6;
+    //100000   : binary balanced databases
     //114348*6 : 32x32_balanced database
+    std::string actName = "NP";
+    std::string datasetPath = "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/32x32_balanced/";
+                           // "/home/cleonard/Data/BinaryFeatures/32x32_binary-50%/"
+    uint64_t globalDTB = 1;
 
     //std::cout << "argc: " << argc << std::endl;
-    if (argc == 9)
+    if (argc == 11)
     {
         actions0.clear(); actions1.clear();
         ParseStringInVector(actions0, (std::string) argv[1]);
@@ -72,12 +75,19 @@ int main(int argc, char* argv[])
         nbFeatures = atoi(argv[6]);
         nbDatabaseElements = atoi(argv[7]);
         actName = argv[8];
+        datasetPath = argv[9];
+        globalDTB = atoi(argv[10]);
     }
     else
     {
         std::cout << "Arguments were not precised (waiting 7 arguments : actions0, actions1, seed, cuHeight, cuWidth, nbFeatures and nbDatabaseElements). Using default value." << std::endl;
         std::cout << "Example : \"./TPGVVCPartDatabase_binaryFeaturesEnv {0} {1,2,3,4,5} 0 32 32 112 686088\"" << std::endl ;
     }
+
+    // Update datasetPath depending on globalDTB
+    if(globalDTB == 0)
+        datasetPath += actName + "/";
+
     std::cout << std::endl << "---------- Main arguments ----------" << std::endl;
     //std::cout << "argv[1]: " << argv[1] << ", argv[2]: " << argv[2] << std::endl;
     std::cout << std::setw(13) << "actions0 :";
@@ -90,7 +100,10 @@ int main(int argc, char* argv[])
     std::cout << std::setw(13) << "cuHeight :" << " " << std::setw(4) << cuHeight << std::endl;
     std::cout << std::setw(13) << "cuWidth :" << " " << std::setw(4) << cuWidth << std::endl;
     std::cout << std::setw(13) << "nbFeatures :" << " " << std::setw(4) << nbFeatures << std::endl;
+    std::cout << std::setw(13) << "nbDTBElements :" << " " << std::setw(4) << nbDatabaseElements << std::endl;
     std::cout << std::setw(13) << "actName :" << " " << std::setw(4) << actName << std::endl;
+    std::cout << std::setw(13) << "datasetPath :" << " " << std::setw(4) << datasetPath << std::endl;
+    std::cout << std::setw(13) << "globalDTB :" << " " << std::setw(4) << globalDTB << std::endl;
 
     std::cout << std::endl << "Start the training of a TPG based on CU features extraction (CNN)" << std::endl;
 
@@ -108,7 +121,7 @@ int main(int argc, char* argv[])
     auto ln_double    = [](double a)->double {return std::log(a); };
     auto exp_double   = [](double a)->double {return std::exp(a); };
     auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
-/*    auto conv2D_double = [](const Data::Constant coeff[9], const double data[3][3])->double {
+    /*auto conv2D_double = [](const Data::Constant coeff[9], const double data[3][3])->double {
         double res = 0.0;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -154,22 +167,10 @@ int main(int argc, char* argv[])
     Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
-    Learn::ParallelLearningAgent la(*LE, set, params);
+    Learn::ClassificationLearningAgent la(*LE, set, params);
     la.init();
 
     // ---------------- Initialising paths ----------------
-    // "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/" || "/home/cleonard/Data/features/"
-    std::string datasetBasePath = "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/";
-    std::string datasetMiddlePath = "x";
-    std::string datasetType = "_perso/";
-    std::string datasetEndPath = "/";
-    std::string datasetPath = datasetBasePath
-                            + std::to_string(LE->getCuHeight())
-                            + datasetMiddlePath
-                            + std::to_string(LE->getCuWidth())
-                            + datasetType
-                            + actName
-                            + datasetEndPath;
     std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTable.txt");
     std::string const fullConfusionMatrixName("/home/cleonard/dev/TpgVvcPartDatabase/fullClassifTable.txt");
 
@@ -231,10 +232,10 @@ int main(int argc, char* argv[])
     bestStats << ps;
     bestStats.close();
 
-    // close logs file
+    // Close logs file
     stats.close();
 
-    // cleanup
+    // Cleanup
     for (unsigned int i = 0; i < set.getNbInstructions(); i++)
         delete (&set.getInstruction(i));
     delete LE;
