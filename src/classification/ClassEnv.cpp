@@ -73,25 +73,26 @@ std::vector<uint8_t> *ClassEnv::trainingTargetsOptimalSplits = new std::vector<u
 std::vector<Data::PrimitiveTypeArray2D<uint8_t>*> *ClassEnv::validationTargetsCU = new std::vector<Data::PrimitiveTypeArray2D<uint8_t>*>;  // Array2DWrapper
 std::vector<uint8_t> *ClassEnv::validationTargetsOptimalSplits = new std::vector<uint8_t>;
 
-Data::PrimitiveTypeArray2D<uint8_t> *ClassEnv::getRandomCU(uint64_t index, Learn::LearningMode mode) {
+void ClassEnv::getRandomCU(Learn::LearningMode mode, const std::string& databasePath)
+{
     // ------------------ Opening and Reading a random CU file ------------------
+    char datasetPath[100] = "/home/cleonard/Data/CU/CU_32x32_balanced/";
     uint32_t next_CU_number = this->rng.getInt32(0, NB_TRAINING_ELEMENTS - 1);
     char next_CU_number_string[100];
     std::sprintf(next_CU_number_string, "%d", next_CU_number);
-    char current_CU_path[100] = "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/";
-    // "D:/dev/InnovR/dataset_tpg_32x32_27/dataset_tpg_32x32_27/" || "/home/cleonard/Data/dataset_tpg_balanced/dataset_tpg_32x32_27_balanced2/"
+    //char current_CU_path[100];
+    //std::strcat(current_CU_path, datasetPath.c_str());
     char bin_extension[10] = ".bin";
-    std::strcat(current_CU_path, next_CU_number_string);
-    std::strcat(current_CU_path, bin_extension);
+    std::strcat(datasetPath, next_CU_number_string);
+    std::strcat(datasetPath, bin_extension);
 
     // Openning the file
-    std::FILE *input = std::fopen(current_CU_path, "r");
+    std::FILE *input = std::fopen(datasetPath, "r");
     if (!input)
     {
-        char error_file_path[300] = "File opening failed : ";
-        std::strcat(error_file_path, current_CU_path);
+        char error_file_path[300] = "File opening failed: ";
+        std::strcat(error_file_path, datasetPath);
         std::perror(error_file_path);
-        return nullptr; // return EXIT_FAILURE;
     }
 
     // Stocking content in a uint8_t tab, first 32x32 uint8_t are CU's pixels values and the 1025th value is the optimal split
@@ -111,21 +112,54 @@ Data::PrimitiveTypeArray2D<uint8_t> *ClassEnv::getRandomCU(uint64_t index, Learn
 
     // Updating the corresponding optimal split depending of the current mode
     if (mode == Learn::LearningMode::TRAINING)
+    {
+        ClassEnv::trainingTargetsCU->push_back(randomCU);
         ClassEnv::trainingTargetsOptimalSplits->push_back(contents[1024]);
+    }
     else if (mode == Learn::LearningMode::VALIDATION)
+    {
+        ClassEnv::validationTargetsCU->push_back(randomCU);
         ClassEnv::validationTargetsOptimalSplits->push_back(contents[1024]);
+    }
 
-    return randomCU;
 }
 
-void ClassEnv::LoadNextCU() {
-    // Checking validity is no longer necessary
+void ClassEnv::UpdateTargets(uint64_t currentGen, const std::string& databasePath)
+{
+    // Each ${nbGeneTargetChange} generation, generate new random training targets so that different targets are used
+    if (currentGen % NB_GENERATION_BEFORE_TARGETS_CHANGE == 0)
+    {
+        // ---  Deleting old targets ---
+        if (currentGen != 0) // Don't clear trainingTargets before initializing them
+        {
+            this->reset(this->seed, Learn::LearningMode::TRAINING);
+            for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
+                delete ClassEnv::trainingTargetsCU->at(idx_targ);   // Targets are allocated in getRandomCUFeaturesFromCSVFile()
+            ClassEnv::trainingTargetsCU->clear();
+            ClassEnv::trainingTargetsOptimalSplits->clear();
+            this->actualTrainingCU = 0;
+        }
+        else        // Load VALIDATION Targets at the beginning of the training (i == 0)
+        {
+            for (uint64_t idx_targ = 0; idx_targ < NB_VALIDATION_TARGETS; idx_targ++)
+                this->getRandomCU(Learn::LearningMode::VALIDATION, databasePath);
+        }
+
+        // ---  Loading next targets ---
+        for (uint64_t idx_targ = 0; idx_targ < NB_TRAINING_TARGETS; idx_targ++)
+            this->getRandomCU(Learn::LearningMode::TRAINING, databasePath);
+    }
+}
+
+void ClassEnv::LoadNextCU()
+{
     if (this->currentMode == Learn::LearningMode::TRAINING)
     {
+        // Load next CU
         this->currentCU = *ClassEnv::trainingTargetsCU->at(this->actualTrainingCU);
-
         // Updating next split solution
         this->currentClass = ClassEnv::trainingTargetsOptimalSplits->at(this->actualTrainingCU);
+        // Increment index
         this->actualTrainingCU++;
 
         // Looping on the beginning of training targets
@@ -134,10 +168,11 @@ void ClassEnv::LoadNextCU() {
     }
     else if (this->currentMode == Learn::LearningMode::VALIDATION)
     {
+        // Load next CU
         this->currentCU = *ClassEnv::validationTargetsCU->at(this->actualValidationCU);
-
         // Updating next split solution
         this->currentClass = ClassEnv::validationTargetsOptimalSplits->at(this->actualValidationCU);
+        // Increment index
         this->actualValidationCU++;
 
         // Looping on the beginning of validation targets
@@ -146,7 +181,7 @@ void ClassEnv::LoadNextCU() {
     }
 }
 
-void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile)
+void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const uint64_t numGen, std::string const& outputFile, bool readable)
 {
     // Print table of classification of the best
     TPG::TPGExecutionEngine tee(env, nullptr);
@@ -157,9 +192,9 @@ void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVert
     // Fill the table
     const int nbClasses = 6;
 
-    uint64_t classifTable[nbClasses][nbClasses] = { 0 };
+    uint64_t classifTable[nbClasses][nbClasses] = { {0} };
     uint64_t nbPerClass[nbClasses] = { 0 };
-    uint8_t actionID = -1;
+    uint8_t actionID;
 
     for (uint64_t nbImage = 0; nbImage < this->NB_VALIDATION_TARGETS; nbImage++)
     {
@@ -169,7 +204,7 @@ void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVert
 
         // Execute
         auto path = tee.executeFromRoot(*bestRoot);
-        const TPG::TPGAction* action = (const TPG::TPGAction*)path.at(path.size() - 1);
+        const auto* action = (const TPG::TPGAction*)path.at(path.size() - 1);
         actionID = (uint8_t) action->getActionID();
 
         // Increment table
@@ -182,7 +217,7 @@ void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVert
     // Reset the learning mode to TESTING
     this->reset(0, Learn::LearningMode::TESTING);
 
-    // Computing Score :
+/*    // Computing Score :
     uint64_t score = 0;
     for (int i = 0; i < nbClasses; i++)
         score += classifTable[i][i];
@@ -202,13 +237,13 @@ void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVert
             {
                 uint64_t nb = classifTable[x][y]; //this->classificationTable.at(x).at(y);
 
-                int nbChar = (int) (1 + (nb == 0 ? 0 : log10(nb)));
+                int nbChar = (int) (1 + (nb == 0 ? 0 : log10((double) nb)));
                 for(int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
                     fichier << " ";
                 fichier << nb << (x == y ? "-" : " ");
             }
             uint64_t nb = nbPerClass[x];
-            int nbChar = (int)(1 + (nb == 0 ? 0 : log10(nb)));
+            int nbChar = (int)(1 + (nb == 0 ? 0 : log10((double) nb)));
             for (int nbEspace = 0; nbEspace < (nbClasses - nbChar); nbEspace++)
                 fichier << " ";
             fichier << nb << std::endl;
@@ -217,5 +252,102 @@ void ClassEnv::printClassifStatsTable(const Environment& env, const TPG::TPGVert
     }else
     {
         std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+    }*/
+
+    // Computing Score and ScoreMax
+    double validationScore = 0.0;
+    double scoreMax = 0.0;
+    for (int i = 0; i < nbClasses; i++)
+    {
+        validationScore += ((double) classifTable[i][i]);
+        scoreMax += ((double) nbPerClass[i]);
+    }
+
+    int colWidth = 7;
+
+    // If readable confusion matrix is needed
+    if(readable)
+    {
+        // Print the table
+        std::ofstream file(outputFile.c_str(), std::ios::app);
+        if (file)
+        {
+            // Compute total score
+            double scoreTot = 0.0;
+            for (int i = 0; i < nbClasses; i++)
+            {
+                double norm = (double) classifTable[i][i] / (double) nbPerClass[i] * 100;
+                scoreTot += norm;
+            }
+            scoreTot /= (double) nbClasses;
+
+            // Print the beginning of the confusion matrix
+            file << "-----------------------------------------------------" << std::endl;
+            file << "Gen: " << numGen << " | Score: " << std::setprecision(4) << scoreTot << std::endl << std::endl;
+
+            file << std::setw(4) << " " << std::setw(colWidth) << "NS"
+                 << std::setw(colWidth) << "QT"  << std::setw(colWidth) << "BTH"
+                 << std::setw(colWidth) << "BTV" << std::setw(colWidth) << "TTH"
+                 << std::setw(colWidth) << "TTV" << std::setw(colWidth) << "TOT" << std::endl;
+            for (int x = 0; x < nbClasses; x++)
+            {
+                // Print real class number
+                file << std::setw(4) << x;
+
+                // Get total number of class instances
+                uint64_t nb = nbPerClass[x];
+
+                // Print number of guessed instances for each class
+                for (int y = 0; y < nbClasses; y++)
+                    file << std::setw(colWidth) << std::setprecision(4) << (double) classifTable[x][y] / (double) nb * 100;
+
+                // Print total number of class instances
+                file << std::setw(colWidth) << nb << std::endl;
+            }
+            file << std::endl;
+            file.close();
+        } else {
+            std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+        }
+    }else  // If non-readable confusion matrix is asked (re-usable data)
+    {
+        // Print the table
+        std::ofstream file(outputFile.c_str(), std::ios::app);
+        if (file)
+        {
+            if(numGen == 0)
+            {
+                file << "Features TPG training" << std::endl << std::endl;
+
+                file << std::setw(colWidth) << "Split" << std::setw(colWidth) << "NS"
+                     << std::setw(colWidth) << "QT"  << std::setw(colWidth) << "BTH"
+                     << std::setw(colWidth) << "BTV" << std::setw(colWidth) << "TTH"
+                     << std::setw(colWidth) << "TTV" << std::setw(colWidth) << "TOT" << std::endl;
+
+                file << std::setw(colWidth) << "Total";
+                for(unsigned long nb : nbPerClass)
+                    file << std::setw(colWidth) << nb;
+                file << std::setw(colWidth) << this->NB_VALIDATION_TARGETS << std::endl << std::endl;
+
+                file << std::setw(colWidth) << "Gen" << std::setw(colWidth) << "NS"
+                     << std::setw(colWidth) << "QT"  << std::setw(colWidth) << "BTH"
+                     << std::setw(colWidth) << "BTV" << std::setw(colWidth) << "TTH"
+                     << std::setw(colWidth) << "TTV" << std::setw(colWidth) << "MOY" << std::endl;
+            }
+            file << std::setw(colWidth) << numGen;
+            double scoreTot = 0.0;
+            for (int i = 0; i < nbClasses; i++)
+            {
+                double norm   = (double) classifTable[i][i] / (double) nbPerClass[i] * 100;
+                file << std::setw(colWidth) << std::setprecision(4) << norm;
+                scoreTot += norm;
+            }
+            scoreTot /= (double) nbClasses;
+            file << std::setw(colWidth) << std::setprecision(4) << scoreTot << std::endl;
+            file.close();
+        } else
+        {
+            std::cout << "Unable to open the file " << outputFile << "." << std::endl;
+        }
     }
 }

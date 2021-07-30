@@ -16,10 +16,12 @@ private:
     // Number of different actions for the Agent
     static const uint8_t NB_ACTIONS = 6;
     // On 1.4M elements in the database, we use 80% : 
-    static const uint32_t NB_TRAINING_ELEMENTS = 329999; // Pour la database balanced, sinon : 1136424;
+    static const uint32_t NB_TRAINING_ELEMENTS = 420000; // Pour la database balanced, sinon : 1136424;
 
-    // Randomness control
+    /// Randomness control
     Mutator::RNG rng;
+    /// Seed for randomness control
+    size_t seed;
 
     /**
     * \brief Available actions for the LearningAgent.
@@ -81,6 +83,7 @@ public:
     ClassEnv(std::vector<uint64_t> actions, const uint64_t nbActionsPerEval, const uint64_t nbGeneTargetChange, const uint64_t nbValidationTarget, size_t seed)
             : ClassificationLearningEnvironment(NB_ACTIONS),
               rng(seed),
+              seed(seed),
               //availableActions(actions),
               //score(0),
               currentMode(Learn::LearningMode::TRAINING),
@@ -92,8 +95,17 @@ public:
               NB_VALIDATION_TARGETS(nbValidationTarget),
               actualValidationCU(0) {}
 
-    Data::PrimitiveTypeArray2D<uint8_t>* getRandomCU(uint64_t index, Learn::LearningMode mode);
-    void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const int numGen, std::string const outputFile);
+    void getRandomCU(Learn::LearningMode mode, const std::string& databasePath);
+    /**
+     * \brief Update Training and Validation Targets depending on the generation
+     * For the first generation (numGen == 0), load NB_VALIDATION_TARGETS CU features for validation and NB_TRAINING_TARGETS CU features for training
+     * Else every NB_GENERATION_BEFORE_TARGETS_CHANGE, delete old training targets and load NB_TRAINING_TARGETS new CU features.
+     *
+     * \param[in] currentGen The number of the current generation
+     * \param[in] current_CU_path The path of the database
+     */
+    void UpdateTargets(uint64_t currentGen, const std::string& databasePath);
+    void printClassifStatsTable(const Environment& env, const TPG::TPGVertex* bestRoot, const uint64_t numGen, std::string const& outputFile, bool readable);
 
     // -------- LearningEnvironment --------
     LearningEnvironment *clone() const;

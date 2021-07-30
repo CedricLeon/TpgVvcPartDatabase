@@ -1,58 +1,165 @@
 #include <iostream>
 #include <cmath>
 #include <thread>
-#include <atomic>
 #include <cinttypes>
 
 #include <gegelati.h>
 
 #include "../../include/classification/ClassEnv.h"
 
-#ifndef NB_GENERATIONS
-#define NB_GENERATIONS 2000
-#endif
-
-void getKey(std::atomic<bool>& exit)
-{
-    std::cout << std::endl;
-    std::cout << "Press `q` then [Enter] to exit." << std::endl;
-    std::cout.flush();
-
-    exit = false;
-
-    while (!exit) {
-        char c;
-        std::cin >> c;
-        switch (c) {
-        case 'q':
-        case 'Q':
-            exit = true;
-            break;
-        default:
-            printf("Invalid key '%c' pressed.", c);
-            std::cout.flush();
-        }
-    }
-
-    printf("Program will terminate at the end of next generation.\n");
-    std::cout.flush();
-}
-
 int main()
 {
-    std::cout << "Start VVC Partitionning with TPG application." << std::endl;
+    std::cout << "Start TPGVVCPartDatabase : training a full (6 actions) classification TPG." << std::endl;
 
+    // ************************************************** INSTRUCTIONS *************************************************
     // Create the instruction set for programs
-    // uint8_t
     Instructions::Set set;
+
+    // Create the uint8_t instructions
     auto minus = [](uint8_t a, uint8_t b)->double {return a - b; };
     auto add   = [](uint8_t a, uint8_t b)->double {return a + b; };
     auto mult  = [](uint8_t a, uint8_t b)->double {return a * b; };
     auto div   = [](uint8_t a, uint8_t b)->double {return a / (double)b; }; // cast b to double to avoid div by zero (uint8_t)
     auto max   = [](uint8_t a, uint8_t b)->double {return std::max(a, b); };
     auto multByConst = [](uint8_t a, Data::Constant c)->double {return a * (double)c; };
+    auto mean2 = [](const uint8_t data[2][2])->double
+    {
+        uint8_t sum = 0;
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                sum += data[i][j];
+        return sum;
+    };
+    auto mean3 = [](const uint8_t data[3][3])->double
+    {
+        uint8_t sum = 0;
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                sum += data[i][j];
+        return sum;
+    };
+    auto mean4 = [](const uint8_t data[4][4])->double
+    {
+        uint8_t sum = 0;
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                sum += data[i][j];
+        return sum;
+    };
+    auto mean5 = [](const uint8_t data[5][5])->double
+    {
+        uint8_t sum = 0;
+        for (int i = 0; i < 5; i++)
+            for (int j = 0; j < 5; j++)
+                sum += data[i][j];
+        return sum;
+    };
+    auto var2 = [mean2](const uint8_t data[2][2])->double
+    {
+        double sum = 0;
+        double dataTmp[2][2];
 
-    // double
+        // Compute mean
+        double mean = mean2(data);
+
+        for (int i = 0; i < 2; i++)
+        {
+            for (int j = 0; j < 2; j++)
+            {
+                // Subtract mean from elements
+                dataTmp[i][j] = data[i][j] - mean;
+                // Square each term
+                dataTmp[i][j] *= dataTmp[i][j];
+            }
+        }
+
+        // Take sum
+        for (int i = 0; i < 2; i++)
+            for (int j = 0; j < 2; j++)
+                sum += data[i][j];
+
+        return sum / (2 * 2);
+    };
+    auto var3 = [mean3](const uint8_t data[3][3])->double
+    {
+        double sum = 0;
+        double dataTmp[3][3];
+
+        // Compute mean
+        double mean = mean3(data);
+
+        for (int i = 0; i < 3; i++)
+        {
+            for (int j = 0; j < 3; j++)
+            {
+                // Subtract mean from elements
+                dataTmp[i][j] = data[i][j] - mean;
+                // Square each term
+                dataTmp[i][j] *= dataTmp[i][j];
+            }
+        }
+
+        // Take sum
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
+                sum += data[i][j];
+
+        return sum / (3 * 3);
+    };
+    auto var4 = [mean4](const uint8_t data[4][4])->double
+    {
+        double sum = 0;
+        double dataTmp[4][4];
+
+        // Compute mean
+        double mean = mean4(data);
+
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < 4; j++)
+            {
+                // Subtract mean from elements
+                dataTmp[i][j] = data[i][j] - mean;
+                // Square each term
+                dataTmp[i][j] *= dataTmp[i][j];
+            }
+        }
+
+        // Take sum
+        for (int i = 0; i < 4; i++)
+            for (int j = 0; j < 4; j++)
+                sum += data[i][j];
+
+        return sum / (4 * 4);
+    };
+    auto var5 = [mean5](const uint8_t data[5][5])->double
+    {
+        double sum = 0;
+        double dataTmp[5][5];
+
+        // Compute mean
+        double mean = mean5(data);
+
+        for (int i = 0; i < 5; i++)
+        {
+            for (int j = 0; j < 5; j++)
+            {
+                // Subtract mean from elements
+                dataTmp[i][j] = data[i][j] - mean;
+                // Square each term
+                dataTmp[i][j] *= dataTmp[i][j];
+            }
+        }
+
+        // Take sum
+        for (int i = 0; i < 5; i++)
+            for (int j = 0; j < 5; j++)
+                sum += data[i][j];
+
+        return sum / (5 * 5);
+    };
+
+    // Create the double instructions
     auto minus_double = [](double a, double b)->double {return a - b; };
     auto add_double   = [](double a, double b)->double {return a + b; };
     auto mult_double  = [](double a, double b)->double {return a * b; };
@@ -70,14 +177,25 @@ int main()
         }
         return res;
     };
+
     // Add those instructions to instruction set
+    // uint8_t
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(minus)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(add)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(mult)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(div)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(max)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, Data::Constant>(multByConst)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[2][2]>(mean2)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[2][2]>(var2)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[3][3]>(mean3)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[3][3]>(var3)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[4][4]>(mean4)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[4][4]>(var4)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[5][5]>(mean5)));
+    set.add(*(new Instructions::LambdaInstruction<const uint8_t[5][5]>(var5)));
 
+    // double
     set.add(*(new Instructions::LambdaInstruction<double, double>(minus_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(add_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(mult_double)));
@@ -88,169 +206,90 @@ int main()
     set.add(*(new Instructions::LambdaInstruction<double, Data::Constant>(multByConst_double)));
     set.add(*(new Instructions::LambdaInstruction<const Data::Constant[9], const uint8_t[3][3]>(conv2D_double)));
 
+
+    // ******************************************* PARAMETERS AND ENVIRONMENT ******************************************
+
+    // ---------------- Loading and initializing parameters ----------------
     // Init training parameters (load from "/params.json")
     Learn::LearningParameters params;
     File::ParametersParser::loadParametersFromJson(ROOT_DIR "/params.json", params);
 
+    // Printing every parameters (even default ones) in a .json file
+    //File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json", params);
+
     // Initialising number of preloaded CUs
-    uint64_t maxNbActionsPerEval = 10*params.maxNbActionsPerEval;                       // 10 000
-    uint64_t nbGeneTargetChange = 30;                                                   // 30
-    uint64_t nbValidationTarget = 1000;                                                 // 1000
+    uint64_t nbTrainingTargets = 10000;
+    uint64_t nbGeneTargetChange = 30;
+    uint64_t nbValidationTarget = 1000;
+    size_t seed = 0;
 
-    // Instantiate the LearningEnvironment
-    auto *LE = new ClassEnv({0, 1, 2, 3, 4, 5}, maxNbActionsPerEval, nbGeneTargetChange, nbValidationTarget,  0);
+    // ---------------- Instantiate Environment and Agent ----------------
+    // LearningEnvironment
+    auto *LE = new ClassEnv({0, 1, 2, 3, 4, 5}, nbTrainingTargets, nbGeneTargetChange, nbValidationTarget,  seed);
+    // Creating a second environment used to compute the classification table
+    Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant);
 
-    std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
-    std::cout << "Parameters : "<< std::endl;
-    std::cout << "  - NB Training Targets = " << maxNbActionsPerEval << std::endl;
-    std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
-    std::cout << "  - NB Generation Change = " << nbGeneTargetChange << std::endl;
-    std::cout << "  - Ratio Deleted Roots  = " << params.ratioDeletedRoots << std::endl;
-
-    Environment env(set, LE->getDataSources(), params.nbRegisters, params.nbProgramConstant); // Nb de registres dans les programmes
-
-    // Instantiate the TPGGraph that we will load
-    //auto tpg = TPG::TPGGraph(env);
-    // Create an importer for the best graph and imports it
-    //std::cout << "Import graph" << std::endl;
-    //File::TPGGraphDotImporter dotImporter(ROOT_DIR "/out_0020.dot", env, tpg);
-    //dotImporter.importGraph();
-
+    // The BaseLearningAgent template parameter is the LearningAgent from which the ClassificationLearningAgent inherits.
+    // This template notably enable selecting between the classical and the ParallelLearningAgent.
     // Instantiate and Init the Learning Agent (non-parallel : LearningAgent / parallel ParallelLearningAgent)
     Learn::ClassificationLearningAgent la(*LE, set, params);
-    //Learn::LearningAgent *la = new Learn::LearningAgent(*LE, set, params);   // USING Non-Parallel Agent to DEBUG
     la.init();
 
-    // Printing every parameters in a .json file
-    File::ParametersParser::writeParametersToJson("/home/cleonard/dev/TpgVvcPartDatabase/build/paramsJson.json", params);
-    // "D:/dev/InnovR/TpgVvcPartDatabase/paramsJson.json" || "/home/cleonard/dev/TpgVvcPartDatabase/paramsJson.json"
+    // ---------------- Initialising paths ----------------
+    const std::string datasetPath = "/home/cleonard/Data/CU/CU_32x32_balanced/";
+    //"/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/32x32_balanced/";
+    const std::string fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTable.txt");
+    const std::string fullConfusionMatrixName("/home/cleonard/dev/TpgVvcPartDatabase/fullClassifTable.txt");
 
-    // Init the best Policy
-    //const TPG::TPGVertex* bestRoot = NULL; // unused ?
+    // ---------------- Printing training overview  ----------------
+    std::cout << "Number of threads: " << std::thread::hardware_concurrency() << std::endl;
+    std::cout << "Parameters : "<< std::endl;
+    std::cout << "  - NB Training Targets   = " << nbTrainingTargets << std::endl;
+    std::cout << "  - NB Validation Targets = " << nbValidationTarget << std::endl;
+    std::cout << "  - NB Generation Change  = " << nbGeneTargetChange << std::endl;
+    std::cout << "  - Ratio Deleted Roots   = " << params.ratioDeletedRoots << std::endl;
 
-    // Start a thread for controlling the loop
-#ifndef NO_CONSOLE_CONTROL
-    // Console
-    std::atomic<bool> exitProgram = true; // (set to false by other thread)
-    //std::atomic<uint64_t> generation = 0;
-
-    std::thread threadKeyboard(getKey, std::ref(exitProgram));
-
-    while (exitProgram); // Wait for other thread to print key info.
-#else
-    std::atomic<bool> exitProgram = false;
-#endif
-
-    // Basic logger
+    // ************************************************ LOGS MANAGEMENT ************************************************
+    // Create a basic logger
     Log::LABasicLogger basicLogger(la);
 
     // Create an exporter for all graphs
     File::TPGGraphDotExporter dotExporter("out_0000.dot", la.getTPGGraph());
 
     // Logging best policy stat.
-    std::ofstream stats;                                                // Warning : stats is uninitialized
+    std::ofstream stats;
     stats.open("bestPolicyStats.md");
     Log::LAPolicyStatsLogger policyStatsLogger(la, stats);
 
-    // Used as it is, we load 10 000 CUs and we use them for every roots during 5 generations
-    // For Validation, 1 000 CUs are loaded and used forever
-    // Main training Loop
-
-    std::string const fileClassificationTableName("/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt");
-    // "D:/dev/InnovR/TpgVvcPartDatabase/fileClassificationTableName.txt" || "/home/cleonard/dev/TpgVvcPartDatabase/fileClassificationTableName.txt"
-    for (int i = 0; i < NB_GENERATIONS && !exitProgram; i++)
+    // *********************************************** MAIN TRAINING LOOP **********************************************
+    for (uint64_t i = 0; i < params.nbGenerations; i++)
     {
-        // Each ${nbGeneTargetChange} generation, we generate new random training targets so that different targets are used.
-        if (i % nbGeneTargetChange == 0)
-        {
-            // ---  Deleting old targets ---
-            if (i != 0) // Don't clear trainingTargets before initializing them
-            {
-                LE->reset(i);
-                for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
-                    delete ClassEnv::trainingTargetsCU->at(idx_targ);   // targets are allocated in getRandomCU()
-                ClassEnv::trainingTargetsCU->clear();
-                ClassEnv::trainingTargetsOptimalSplits->clear();
-                LE->actualTrainingCU = 0;
-            }
-            else        // Load VALIDATION Targets at the beginning of the training (i == 0)
-            {
-                for (uint64_t idx_targ = 0; idx_targ < nbValidationTarget; idx_targ++)
-                {
-                    Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::VALIDATION);
-                    ClassEnv::validationTargetsCU->push_back(target);
-                } 
-            }
+        // Update Training and Validation targets depending on the generation
+        LE->UpdateTargets(i, datasetPath);
 
-            // ---  Loading next targets ---
-            for (uint64_t idx_targ = 0; idx_targ < maxNbActionsPerEval; idx_targ++)
-            {
-                Data::PrimitiveTypeArray2D<uint8_t>* target = LE->getRandomCU(idx_targ, Learn::LearningMode::TRAINING);
-                ClassEnv::trainingTargetsCU->push_back(target);
-                // Optimal split is saved in LE->trainingTargetsOptimalSplits inside getRandomCU()
-            }
-        }
+        // Save best generation policy (spend unnecessary computation resources)
+        //char buff[20];
+        //sprintf(buff, "out_%" PRIu64 ".dot", i);
+        //dotExporter.setNewFilePath(buff);
+        //dotExporter.print();
 
-        char buff[13];
-        sprintf(buff, "out_%04d.dot", i);
-        dotExporter.setNewFilePath(buff);
-        dotExporter.print();
-
+        // Train
         la.trainOneGeneration(i);
 
-        /**************************** Printing Classification Table using ugly loop *********************************/
+        // Print Classification Table
         const TPG::TPGVertex* bestRoot = la.getBestRoot().first;
-        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName);
-
-        /**************************** Trying To print Classification Table using getClassificationTable() *********************************/
-        
-        /*// On recup la best root
-        const TPG::TPGVertex *bestRoot = la->getBestRoot().first;
-        std::shared_ptr<Learn::EvaluationResult> bestRootResult = la->getBestRoot().second;
-
-        // On relance une évaluation sur cette best root
-        LE->reset(0, Learn::LearningMode::VALIDATION);
-        auto tee = TPG::TPGExecutionEngine(env);
-        const std::vector<const TPG::TPGVertex*> vertices = la->getTPGGraph().getVertices();
-        auto iter = std::find(vertices.begin(), vertices.end(), bestRoot);
-        auto num = iter - vertices.begin();
-        auto job = la->makeJob(num, Learn::LearningMode::VALIDATION);
-        Learn::EvaluationResult result = *(la->evaluateJob(tee, *job, i, Learn::LearningMode::VALIDATION, *LE));
-
-        // On affiche la classificationTable
-        std::ofstream fichier(fileClassificationTableName.c_str(), std::ios::app);
-        if(fichier)
-        {
-            fichier << "-------------------------------------------" << std::endl;
-            fichier << "Gen : " << i << ", score de la best Root : " << bestRootResult->getResult() << std::endl;
-            fichier << "     NP     QT    BTH    BTV    TTH    TTV" << std::endl;
-
-            for(int x = 0; x < 6; x++)
-            {
-                fichier << x;
-                for(int y = 0; y < 6; y++)
-                {
-                    int nb = LE->getClassificationTable().at(x).at(y);
-
-                    int nbChar = (int) (1 + (nb == 0 ? 0 : log10(nb)));
-                    for(int nbEspace = 0; nbEspace < (6-nbChar); nbEspace++)
-                        fichier << " ";
-                    fichier << nb << " ";
-                }
-                fichier << std::endl;
-            }
-            fichier.close();
-        }else
-        {
-            std::cout << "Impossible d'ouvrir le fichier fileClassificationTableName." << std::endl;
-        }*/
+        LE->printClassifStatsTable(env, bestRoot, i, fileClassificationTableName, false);
+        LE->printClassifStatsTable(env, bestRoot, i, fullConfusionMatrixName, true);
     }
+
+    // ************************************************** TRAINING END *************************************************
 
     // After training, keep the best policy
     la.keepBestPolicy();
     dotExporter.setNewFilePath("out_best.dot");
     dotExporter.print();
 
+    // Store stats
     TPG::PolicyStats ps;
     ps.setEnvironment(la.getTPGGraph().getEnvironment());
     ps.analyzePolicy(la.getBestRoot().first);
@@ -258,18 +297,14 @@ int main()
     bestStats.open("out_best_stats.md");
     bestStats << ps;
     bestStats.close();
+
+    // Close logs file
     stats.close();
 
-    // cleanup
+    // Cleanup
     for (unsigned int i = 0; i < set.getNbInstructions(); i++)
         delete (&set.getInstruction(i));
     delete LE;
-
-#ifndef NO_CONSOLE_CONTROL
-    // Exit the thread
-    std::cout << "Exiting program, press a key then [enter] to exit if nothing happens.";
-    threadKeyboard.join();
-#endif
 
     return 0;
 }
