@@ -116,7 +116,10 @@ void BinaryFeaturesEnv::getRandomCUFeaturesFromCSVFile(Learn::LearningMode mode,
             BinaryFeaturesEnv::validationTargetsSplits->push_back(optSplit);
         }
 
-    }
+    }/*else
+    {
+        fprintf(stderr, "File not good : %s\n", CSV_path);
+    }*/
     file.close();
 }
 

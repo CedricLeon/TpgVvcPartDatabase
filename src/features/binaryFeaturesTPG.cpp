@@ -60,10 +60,14 @@ int main(int argc, char* argv[])
     //114348*6 : 32x32_balanced database
     std::string actName = "NP";
     std::string datasetPath = "/media/cleonard/alex/cedric_TPG-VVC/balanced_datasets/32x32_balanced/";
-                           // "/home/cleonard/Data/BinaryFeatures/32x32_binary-50%/"
+    // "/home/cleonard/Data/BinaryFeatures/32x32_binary-50%/"
     uint64_t globalDTB = 1;
 
-    //std::cout << "argc: " << argc << std::endl;
+    std::cout << "argc: " << argc << std::endl;
+    /*for (int i = 0; i < argc-1; i ++)
+        std:: cout << i << ": " << argv[i] << ", ";
+    std::cout << argc << ": " << argv[argc] << std::endl;*/
+
     if (argc == 11)
     {
         actions0.clear(); actions1.clear();
@@ -80,8 +84,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-        std::cout << "Arguments were not precised (waiting 7 arguments : actions0, actions1, seed, cuHeight, cuWidth, nbFeatures and nbDatabaseElements). Using default value." << std::endl;
-        std::cout << "Example : \"./TPGVVCPartDatabase_binaryFeaturesEnv {0} {1,2,3,4,5} 0 32 32 112 686088\"" << std::endl ;
+        std::cout << "Arguments were not precised (waiting 11 arguments : actions0, actions1, seed, cuHeight, cuWidth, nbFeatures, nbDatabaseElements, actionName, datasetPath and globalDTB). Using default value." << std::endl;
+        std::cout << "Example : \"./TPGVVCPartDatabase_binaryFeaturesEnv {0} {1,2,3,4,5} 0 32 32 112 686088 NP /Path/To/Dataset/ 0\"" << std::endl ;
     }
 
     // Update datasetPath depending on globalDTB
@@ -90,22 +94,20 @@ int main(int argc, char* argv[])
 
     std::cout << std::endl << "---------- Main arguments ----------" << std::endl;
     //std::cout << "argv[1]: " << argv[1] << ", argv[2]: " << argv[2] << std::endl;
-    std::cout << std::setw(13) << "actions0 :";
+    std::cout << std::setw(13) << "actions0:";
     for (auto &act : actions0)
         std::cout << std::setw(4) << (int) act;
-    std::cout << std::endl << std::setw(13) << "actions1 :";
+    std::cout << std::endl << std::setw(13) << "actions1:";
     for (auto &act : actions1)
         std::cout << std::setw(4) << (int) act;
-    std::cout << std::endl << std::setw(13) << "seed :" << " " << std::setw(3) << seed << std::endl;
-    std::cout << std::setw(13) << "cuHeight :" << " " << std::setw(4) << cuHeight << std::endl;
-    std::cout << std::setw(13) << "cuWidth :" << " " << std::setw(4) << cuWidth << std::endl;
-    std::cout << std::setw(13) << "nbFeatures :" << " " << std::setw(4) << nbFeatures << std::endl;
-    std::cout << std::setw(13) << "nbDTBElements :" << " " << std::setw(4) << nbDatabaseElements << std::endl;
-    std::cout << std::setw(13) << "actName :" << " " << std::setw(4) << actName << std::endl;
-    std::cout << std::setw(13) << "datasetPath :" << " " << std::setw(4) << datasetPath << std::endl;
-    std::cout << std::setw(13) << "globalDTB :" << " " << std::setw(4) << globalDTB << std::endl;
-
-    std::cout << std::endl << "Start the training of a TPG based on CU features extraction (CNN)" << std::endl;
+    std::cout << std::endl << std::setw(13) << "seed:" << " " << std::setw(3) << seed << std::endl;
+    std::cout << std::setw(13) << "cuHeight:" << " " << std::setw(4) << cuHeight << std::endl;
+    std::cout << std::setw(13) << "cuWidth:" << " " << std::setw(4) << cuWidth << std::endl;
+    std::cout << std::setw(13) << "nbFeatures:" << " " << std::setw(4) << nbFeatures << std::endl;
+    std::cout << std::setw(13) << "nbDTBElements:" << " " << std::setw(4) << nbDatabaseElements << std::endl;
+    std::cout << std::setw(13) << "actName:" << " " << std::setw(4) << actName << std::endl;
+    std::cout << std::setw(13) << "datasetPath:" << " " << std::setw(4) << datasetPath << std::endl;
+    std::cout << std::setw(13) << "globalDTB:" << " " << std::setw(4) << globalDTB << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
 
