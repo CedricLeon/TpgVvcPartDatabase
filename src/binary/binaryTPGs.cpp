@@ -42,7 +42,7 @@ void getKey(std::atomic<bool>& exit)
 
 int main(int argc, char* argv[])
 {
-    std::cout << "Start the training of a binary TPG" << std::endl;
+    std::cout << "Start TPGVVCPartDatabase : training a binary (2 actions) TPG." << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
 
@@ -66,13 +66,12 @@ int main(int argc, char* argv[])
     auto ln_double    = [](double a)->double {return std::log(a); };
     auto exp_double   = [](double a)->double {return std::exp(a); };
     auto multByConst_double = [](double a, Data::Constant c)->double {return a * (double)c; };
-    auto conv2D_double = [](const Data::Constant coeff[9], const uint8_t data[3][3])->double {
+    auto conv2D_double = [](const Data::Constant coeff[9], const uint8_t data[3][3])->double
+    {
         double res = 0.0;
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 3; j++) {
+        for (int i = 0; i < 3; i++)
+            for (int j = 0; j < 3; j++)
                 res += (double)coeff[i * 3 + j] * data[i][j];
-            }
-        }
         return res;
     };
 
@@ -84,6 +83,7 @@ int main(int argc, char* argv[])
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(div)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, uint8_t>(max)));
     set.add(*(new Instructions::LambdaInstruction<uint8_t, Data::Constant>(multByConst)));
+
     // double
     set.add(*(new Instructions::LambdaInstruction<double, double>(minus_double)));
     set.add(*(new Instructions::LambdaInstruction<double, double>(add_double)));

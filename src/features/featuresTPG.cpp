@@ -1,46 +1,15 @@
 #include <iostream>
 #include <cmath>
 #include <thread>
-#include <atomic>
 #include <cinttypes>
 
 #include <gegelati.h>
 
 #include "../../include/features/FeaturesEnv.h"
 
-/**
- * \brief Manage training run : press 'q' or 'Q' to stop the training
- * \param[exit] used by the threadKeyboard (set to false by other thread)
- */
-void getKey(std::atomic<bool>& exit)
-{
-    std::cout << std::endl;
-    std::cout << "Press `q` then [Enter] to exit." << std::endl;
-    std::cout.flush();
-
-    exit = false;
-
-    while (!exit) {
-        char c;
-        std::cin >> c;
-        switch (c) {
-            case 'q':
-            case 'Q':
-                exit = true;
-                break;
-            default:
-                printf("Invalid key '%c' pressed.", c);
-                std::cout.flush();
-        }
-    }
-
-    printf("Program will terminate at the end of next generation.\n");
-    std::cout.flush();
-}
-
 int main(int argc, char* argv[])
 {
-    std::cout << "Start the training of a TPG based on CU features extraction (CNN)" << std::endl;
+    std::cout << "Start TPGVVCPartDatabase : training a full (6 actions) TPG based on CU features extraction (CNN)." << std::endl;
 
     // ************************************************** INSTRUCTIONS *************************************************
 
@@ -135,17 +104,6 @@ int main(int argc, char* argv[])
     // Printing every parameters in a .json file
     //File::ParametersParser::writeParametersToJson(parametersPrintPath, params);
 
-    // ************************************************ CONSOLE CONTROL ************************************************
-
-    // Start a thread to control the loop
-/*#ifndef NO_CONSOLE_CONTROL
-    std::atomic<bool> exitProgram = true; // (set to false by other thread)
-    std::thread threadKeyboard(getKey, std::ref(exitProgram));
-    while (exitProgram); // Wait for other thread to print key info.
-#else
-    std::atomic<bool> exitProgram = false;
-#endif*/
-
     // ************************************************ LOGS MANAGEMENT ************************************************
 
     // Create a basic logger
@@ -165,7 +123,7 @@ int main(int argc, char* argv[])
     // Used as it is, we load 10 000 CUs and we use them for every roots during 30 generations
     // For Validation, 1 000 CUs are loaded and used forever
 
-    for (uint64_t i = 0; i < params.nbGenerations /*&& !exitProgram*/; i++)
+    for (uint64_t i = 0; i < params.nbGenerations; i++)
     {
         // Update Training and Validation targets depending on the generation
         LE->UpdatingTargets(i, datasetPath);
@@ -206,12 +164,6 @@ int main(int argc, char* argv[])
     for (unsigned int i = 0; i < set.getNbInstructions(); i++)
         delete (&set.getInstruction(i));
     delete LE;
-
-/*#ifndef NO_CONSOLE_CONTROL
-    // Exit the thread
-    std::cout << "Exiting program, press a key then [enter] to exit if nothing happens.";
-    threadKeyboard.join();
-#endif*/
 
     return 0;
 }
