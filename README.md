@@ -1,6 +1,6 @@
 # TpgVvcPartDatabase
 
-Using the *Gegelati* library to test **Tangled Program Graphs** implementation on **VVC (Versatile Video Coding)** Partitioning process.
+Using the *Gegelati* library to test **Tangled Program Graphs (TPG)** implementation on **Versatile Video Coding (VVC)** Partitioning process for complexity reduction purposes.
 
 
 
@@ -15,9 +15,15 @@ VVC owns 6 different splits :
 - Ternary-Tree Horizontal Partitioning (**TTH**), ID: 4 ;
 - Ternary-Tree Vertical Partitioning (**TTV**), ID: 5.
 
-The idea is to create a single TPG or an association of several TPGs choosing the split from the pixel values of the Coding Unit (CU), the input image.
+The idea is to create a single TPG or an association of several TPGs choosing the split from the pixel values of the **Coding Unit (CU)**, the input image.
 
 This problem is very close to a classification type problem so we used 2 different *Gegelati* LearningEnvironment: `LearningEnvironment` (default) and `ClassificationLearningEnvironment` (classification).
+
+
+
+## Scripts launching
+
+The huge majority of all the main files use `argv[]` arguments in order to be able to be launched from scripts. I recommend checking my [scripts repository](https://github.com/CedricLeon/scripts) if you are interested or you simply want examples. 
 
 
 
@@ -33,7 +39,7 @@ Moreover, in order to accelerate the training we avoid opening and reading CU fi
 
 But `trainingTargets` is changed every `nbGenerationTargetChange`(usually 30) and contains `nbValidationTarget` (usually 10.000).
 
-Each solution has its own executable.
+Each solution has its own executable, see `CMakeLists.txt` for more details.
 
 ### Classic classification TPG
 
@@ -42,7 +48,7 @@ Each solution has its own executable.
 
 The first implementation realized implements a simple TPG using as input a `PrimitiveTypeArray2D` of 32x32 `uint8_t` (CU pixel values).
 
-This environment actually uses the `ClassificationLearningEnvironment` of *Gegelati* but can easily use the default `LearningEnvironment.
+This environment actually uses the `ClassificationLearningEnvironment` of *Gegelati* but can easily use the default `LearningEnvironment`.
 
 ### Default Binary Environment
 
@@ -104,5 +110,11 @@ This environment is used to train a binary TPG using CU features as input. It's 
 
 This environment is the most generalized, its main uses `argv[]` to generalized parameters as the `seed`, the `CUsize`, the number of training elements, etc...
 
-This environment also owns a seccond main for inference: *inferenceBinaryFeaturesTPG.cpp*.
+This environment also owns a second main for inference: *inferenceBinaryFeaturesTPG.cpp*.
+
+This second main allows to import and test TPGs in different inference configurations: 
+
+- `AllBinaryParallelFull`: most recent and best solution to the problem so far it uses 6 TPGs trained on the whole databases and executes them all, stores the positive outputs and considers a good classification if the optimal split is among them.
+- `LinearWaterfallSink`: This inference structure uses 5 TPGs trained on the different databases with a "sink" shape. What I mean b y "sink databases" is that the QT-TPG will not be presented NP-split CUs, and so on that the last TPG, the TTH/TTV-TPG, don't know what a NP, QT or BT CU can looks like, its training database only contains TTH and TTV CUs.  These 5 TPGs are executed on by on in a if(if(if()) structure representing a waterfall.
+- `DirectionWaterfallSink`: This inference structure is really similar to the last one but is different by its use of directtional TPGs and not common Binary TPGs like QT, BTH, BTV, etc. Check the figure in the code or the corresponding scripts for more details.
 
